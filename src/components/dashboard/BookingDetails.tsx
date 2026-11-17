@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
 import {
@@ -52,7 +53,8 @@ type BookingDetailsErrorKind =
   | "server"
   | "parse"
   | "notfound"
-  | "invalid";
+  | "invalid"
+  | "conflict";
 
 class BookingDetailsError extends Error {
   readonly kind: BookingDetailsErrorKind;
@@ -307,6 +309,82 @@ async function fetchBookingDetails(
   }
 
   return parseDetailsResponse(body);
+}
+
+/* ================================================================== */
+/*  Stripe Checkout — the browser never sees an amount from here.      */
+/*                                                                      */
+/*  The backend takes the booking's server-side finalAmount and returns */
+/*  a hosted Checkout URL. We only forward the booking reference.       */
+/* ================================================================== */
+
+async function createCheckoutSession(bookingId: string): Promise<string> {
+  const token = await fetchAccessToken();
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/api/payments/checkout-session`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      // The booking reference only — amount/currency/identity are never
+      // sent from the browser.
+      body: JSON.stringify({ bookingId }),
+    });
+  } catch {
+    throw new BookingDetailsError(
+      "network",
+      "Couldn't reach the payment service. Check your connection and try again."
+    );
+  }
+
+  let body: unknown = null;
+  try {
+    body = await response.json();
+  } catch {
+    // Non-JSON body — handled by the status checks below.
+  }
+
+  const serverMessage =
+    isRecord(body) && typeof body.message === "string" && body.message.length > 0 && body.message.length <= 200
+      ? body.message
+      : null;
+
+  if (response.status === 401) {
+    throw new BookingDetailsError(
+      "unauthorized",
+      "Your session has expired. Sign in again to pay for this booking."
+    );
+  }
+
+  if (response.status === 409) {
+    throw new BookingDetailsError(
+      "conflict",
+      serverMessage ?? "This booking can't be paid right now."
+    );
+  }
+
+  if (!response.ok) {
+    throw new BookingDetailsError(
+      "server",
+      serverMessage ?? "Couldn't start the payment. Please try again."
+    );
+  }
+
+  const data = isRecord(body) ? body.data : null;
+  const url = isRecord(data) && typeof data.url === "string" ? data.url : null;
+
+  if (!url || !url.startsWith("https://")) {
+    throw new BookingDetailsError(
+      "parse",
+      "The server returned an unexpected checkout response."
+    );
+  }
+
+  return url;
 }
 
 /* ================================================================== */
@@ -577,6 +655,102 @@ function CopyReferenceButton({ reference }: { reference: string }) {
 /*  Details view                                                       */
 /* ================================================================== */
 
+/* ================================================================== */
+/*  Pay now — Stripe Checkout redirect                                  */
+/* ================================================================== */
+
+function PayNowSection({
+  bookingId,
+  finalAmount,
+}: {
+  bookingId: string;
+  finalAmount: number;
+}) {
+  const [pending, setPending] = useState(false);
+
+  async function handlePayNow() {
+    // Guard against double clicks while the session is being created.
+    if (pending) return;
+    setPending(true);
+
+    try {
+      const checkoutUrl = await createCheckoutSession(bookingId);
+      // Hard navigation to Stripe's hosted Checkout — the only correct
+      // place to enter payment details.
+      window.location.assign(checkoutUrl);
+      // Keep the button disabled: navigation is in flight.
+    } catch (error) {
+      if (error instanceof BookingDetailsError) {
+        toast.error(error.message);
+      } else {
+        toast.error("Something went wrong while starting the payment. Please try again.");
+      }
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="mt-5 border-t border-border pt-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+            Amount due
+          </p>
+          <p className="mt-0.5 text-xl font-extrabold tabular-nums text-heading">
+            {formatAmount(finalAmount)}
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={handlePayNow}
+        disabled={pending}
+        aria-busy={pending}
+        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md disabled:cursor-not-allowed disabled:opacity-70"
+      >
+        {pending ? (
+          <>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="h-4 w-4 animate-spin motion-reduce:animate-none"
+            >
+              <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+            </svg>
+            Redirecting to Stripe…
+          </>
+        ) : (
+          <>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="h-4 w-4"
+            >
+              <rect x="2" y="5" width="20" height="14" rx="2" />
+              <path d="M2 10h20" />
+              <path d="M6 15h4" />
+            </svg>
+            Pay now with Stripe
+          </>
+        )}
+      </button>
+      <p className="mt-2 text-center text-[11px] leading-snug text-muted">
+        Secure Stripe Checkout — you will be redirected to complete the payment.
+      </p>
+    </div>
+  );
+}
+
 function BookingImage({ booking }: { booking: BookingDetails }) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = booking.service.image.length > 0 && !imageFailed;
@@ -823,10 +997,21 @@ function BookingDetailsView({ booking }: { booking: BookingDetails }) {
             {formatBookingDate(booking.updatedAt)}
           </SummaryRow>
         </dl>
-        <p className="mt-5 border-t border-border pt-4 text-[11px] leading-relaxed text-muted">
-          Payment options will be available here soon. The technician settles the
-          final amount once the repair is complete.
-        </p>
+        {booking.status === "completed" &&
+        booking.paymentStatus === "unpaid" &&
+        typeof booking.finalAmount === "number" ? (
+          <PayNowSection bookingId={booking.id} finalAmount={booking.finalAmount} />
+        ) : booking.paymentStatus === "paid" ? (
+          <p className="mt-5 border-t border-border pt-4 text-[11px] leading-relaxed text-muted">
+            <span className="font-semibold text-success">Payment received.</span>{" "}
+            This booking has been paid in full via Stripe Checkout.
+          </p>
+        ) : (
+          <p className="mt-5 border-t border-border pt-4 text-[11px] leading-relaxed text-muted">
+            Payment becomes available once the technician completes the repair
+            and settles the final amount.
+          </p>
+        )}
       </aside>
     </div>
   );

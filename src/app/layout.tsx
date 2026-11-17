@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -37,6 +38,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Navbar />
         {children}
         <Footer />
+        {/* App-wide toast notifications (payments, actions with no inline
+            surface). Dark matches the app's default theme. */}
+        <Toaster position="top-right" richColors closeButton theme="dark" />
       </body>
     </html>
   );

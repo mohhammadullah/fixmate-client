@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
@@ -45,7 +45,15 @@ interface ServicesPageData {
   pagination: BookingsPagination;
 }
 
-type ServicesErrorKind = "unauthorized" | "network" | "server" | "parse";
+type ServicesErrorKind =
+  | "unauthorized"
+  | "forbidden"
+  | "notfound"
+  | "conflict"
+  | "badrequest"
+  | "network"
+  | "server"
+  | "parse";
 
 class ServicesError extends Error {
   readonly kind: ServicesErrorKind;
@@ -279,6 +287,114 @@ async function fetchMyServices(options: {
   return parseServicesResponse(body);
 }
 
+/** DELETE /api/services/:id — technician deletes their own service.
+ *  Ownership is enforced server-side by the `{_id, technicianId}` filter.
+ *  JWT is retrieved per call (never stored/logged); no ownership field is
+ *  ever sent. Backend: 200 {success,message} | 400 | 401 | 403 | 404. */
+async function deleteServiceRequest(serviceId: string): Promise<string> {
+  const token = await fetchAccessToken();
+
+  let response: Response;
+  try {
+    response = await fetch(
+      `${API_BASE}/api/services/${encodeURIComponent(serviceId)}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
+      }
+    );
+  } catch {
+    throw new ServicesError(
+      "network",
+      "Couldn't reach the FixMate server. Check your connection and try again."
+    );
+  }
+
+  if (response.status === 401) {
+    throw new ServicesError(
+      "unauthorized",
+      "Your session has expired. Sign in again to manage your services."
+    );
+  }
+  if (response.status === 403) {
+    throw new ServicesError(
+      "forbidden",
+      "Technician access only. This account isn't allowed to delete services."
+    );
+  }
+  if (response.status === 404) {
+    throw new ServicesError(
+      "notfound",
+      "This service could not be found. It may have already been removed."
+    );
+  }
+  if (response.status === 409) {
+    throw new ServicesError(
+      "conflict",
+      "This service can't be deleted right now. Please try again."
+    );
+  }
+  if (response.status === 400) {
+    throw new ServicesError("badrequest", "Invalid service reference. Refresh the list and try again.");
+  }
+
+  let body: unknown = null;
+  try {
+    body = await response.json();
+  } catch {
+    // Non-JSON body — handled below.
+  }
+
+  const serverMessage =
+    isRecord(body) &&
+    typeof body.message === "string" &&
+    body.message.length > 0 &&
+    body.message.length <= 200
+      ? body.message
+      : null;
+
+  if (!response.ok || (isRecord(body) && body.success === false)) {
+    throw new ServicesError(
+      "server",
+      serverMessage ?? "The server couldn't delete this service. Please try again."
+    );
+  }
+
+  return serverMessage ?? "Service deleted successfully.";
+}
+
+/** Remove a deleted service from the loaded page data and keep the
+ *  pagination metadata consistent with the smaller result set. */
+function applyDeletion(
+  data: ServicesPageData,
+  serviceId: string
+): { data: ServicesPageData; needsRefetch: boolean } {
+  const items = data.items.filter((item) => item.id !== serviceId);
+  const totalItems = Math.max(0, data.pagination.totalItems - 1);
+  const totalPages = Math.max(1, Math.ceil(totalItems / data.pagination.limit));
+  const currentPage = Math.min(data.pagination.currentPage, totalPages);
+
+  // When the last card of a later page is deleted, the current page number
+  // shifts — refetch so the visible items match the new page.
+  const needsRefetch = items.length === 0 && data.pagination.currentPage > 1;
+
+  return {
+    data: {
+      items,
+      pagination: {
+        ...data.pagination,
+        currentPage,
+        totalItems,
+        totalPages,
+        hasNextPage: currentPage < totalPages,
+        hasPrevPage: currentPage > 1,
+      },
+    },
+    needsRefetch,
+  };
+}
+
 /* ================================================================== */
 /*  Display helpers                                                    */
 /* ================================================================== */
@@ -330,6 +446,226 @@ function Badge({ label, className }: { label: string; className: string }) {
     >
       {label}
     </span>
+  );
+}
+
+/* ================================================================== */
+/*  Delete confirmation dialog — custom, accessible, no native         */
+/*  confirm()/alert(). Escape/backdrop dismiss (blocked while pending), */
+/*  focus trapped while open and restored to the trigger on close.     */
+/* ================================================================== */
+
+function DeleteServiceDialog({
+  service,
+  pending,
+  error,
+  onDismiss,
+  onConfirm,
+}: {
+  service: TechnicianService;
+  pending: boolean;
+  error: string | null;
+  onDismiss: () => void;
+  onConfirm: () => void;
+}) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const keepServiceRef = useRef<HTMLButtonElement>(null);
+  const onDismissRef = useRef(onDismiss);
+  const pendingRef = useRef(pending);
+
+  // Keep refs current for the mount-only listeners below.
+  useEffect(() => {
+    onDismissRef.current = onDismiss;
+    pendingRef.current = pending;
+  }, [onDismiss, pending]);
+
+  // Mount-only: initial focus on the safe action, scroll lock, Escape to
+  // dismiss and a Tab focus trap inside the dialog.
+  useEffect(() => {
+    const { body } = document;
+    const previousOverflow = body.style.overflow;
+    body.style.overflow = "hidden";
+    keepServiceRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (!pendingRef.current) onDismissRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const node = dialogRef.current;
+      if (!node) return;
+      const focusable = Array.from(
+        node.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      const focusOutside = !(active instanceof HTMLElement) || !node.contains(active);
+      if (event.shiftKey) {
+        if (active === first || focusOutside) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || focusOutside) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, true);
+      body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center sm:p-6">
+      {/* Backdrop — click to dismiss (ignored while the request is in flight) */}
+      <div
+        aria-hidden="true"
+        onClick={() => {
+          if (!pendingRef.current) onDismissRef.current();
+        }}
+        className="absolute inset-0 bg-navy-950/70 backdrop-blur-[2px]"
+      />
+
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-service-title"
+        aria-describedby="delete-service-description"
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-surface shadow-lg"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <div
+              aria-hidden="true"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-error/40 bg-error-soft text-error"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-6 w-6"
+              >
+                <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                <path d="M10 11v6M14 11v6" />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <h2 id="delete-service-title" className="text-base font-bold leading-snug text-heading">
+                Delete this service?
+              </h2>
+              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
+                FixMate · My Services
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onDismiss}
+            disabled={pending}
+            aria-label="Close dialog"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="h-5 w-5"
+            >
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="px-5 py-5 sm:px-6">
+          <p id="delete-service-description" className="text-sm leading-relaxed text-foreground">
+            This action cannot be undone. The service{" "}
+            <span className="font-semibold text-heading">{service.title}</span> will be
+            permanently removed, along with its details and availability. Customers
+            will no longer be able to find or book it.
+          </p>
+          {error && (
+            <div
+              role="alert"
+              className="mt-4 flex items-start gap-2.5 rounded-xl border border-error/40 bg-error-soft/60 px-4 py-3 text-xs leading-relaxed text-error"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="mt-0.5 h-4 w-4 shrink-0"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 8v4M12 16h.01" />
+              </svg>
+              <span>{error}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col-reverse gap-2 border-t border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
+          <button
+            ref={keepServiceRef}
+            type="button"
+            onClick={onDismiss}
+            disabled={pending}
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={pending}
+            aria-live="polite"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-error px-5 py-2.5 text-sm font-semibold text-background shadow-sm transition-all duration-200 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {pending ? (
+              <>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                  className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                >
+                  <circle cx="12" cy="12" r="9" strokeOpacity="0.3" />
+                  <path d="M21 12a9 9 0 0 0-9-9" />
+                </svg>
+                Deleting…
+              </>
+            ) : (
+              "Delete service"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -497,7 +833,13 @@ function EmptyState({ filtered, onClearFilter }: { filtered: boolean; onClearFil
   );
 }
 
-function ServiceCard({ service }: { service: TechnicianService }) {
+function ServiceCard({
+  service,
+  onDeleteRequest,
+}: {
+  service: TechnicianService;
+  onDeleteRequest: (service: TechnicianService, trigger: HTMLButtonElement) => void;
+}) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = service.image.length > 0 && !imageFailed;
   const availability = service.isAvailable ? "available" : "unavailable";
@@ -637,25 +979,49 @@ function ServiceCard({ service }: { service: TechnicianService }) {
             <span className="font-medium text-foreground">Added</span>{" "}
             {formatServiceDate(service.createdAt)}
           </p>
-          <Link
-            href={`/dashboard/my-services/${service.id}/edit`}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-[10px] font-semibold text-warning transition-colors duration-200 hover:bg-surface-muted"
-            title="Edit this service"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              className="h-4 w-4"
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/dashboard/my-services/${service.id}/edit`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-[10px] font-semibold text-warning transition-colors duration-200 hover:bg-surface-muted"
+              title="Edit this service"
             >
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5l-7 9L19 14.5 21 16.5l-2 7l-8-4-8 4z" />
-            </svg>
-            Edit
-          </Link>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="h-4 w-4"
+              >
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5l-7 9L19 14.5 21 16.5l-2 7l-8-4-8 4z" />
+              </svg>
+              Edit
+            </Link>
+            <button
+              type="button"
+              onClick={(event) => onDeleteRequest(service, event.currentTarget)}
+              aria-label={`Delete ${service.title}`}
+              title="Delete this service"
+              className="inline-flex items-center gap-1.5 rounded-full border border-error/40 bg-error-soft/50 px-3 py-1.5 text-[10px] font-semibold text-error transition-colors duration-200 hover:border-error/60 hover:bg-error-soft"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="h-4 w-4"
+              >
+                <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                <path d="M10 11v6M14 11v6" />
+              </svg>
+              Delete
+            </button>
+          </div>
         </div>
       </div>
     </article>
@@ -772,6 +1138,18 @@ export default function MyServices() {
     | { phase: "success"; data: ServicesPageData }
   >({ phase: "loading" });
 
+  // Delete flow
+  const [deleteTarget, setDeleteTarget] = useState<TechnicianService | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<
+    | { kind: "success"; message: string }
+    | { kind: "error"; message: string; showRefresh: boolean }
+    | null
+  >(null);
+  const deleteInFlightRef = useRef(false);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
   // Handlers set the "loading" phase synchronously (event handlers may
   // setState freely); the effect only talks to the network.
   function beginLoading() {
@@ -839,6 +1217,91 @@ export default function MyServices() {
     setAvailability("all");
     setPage(1);
   }
+
+  function handleDeleteRequest(service: TechnicianService, trigger: HTMLButtonElement) {
+    returnFocusRef.current = trigger;
+    setDeleteError(null);
+    setDeleteTarget(service);
+  }
+
+  function closeDeleteDialog() {
+    // Never dismiss mid-request — that could mask an in-flight delete.
+    if (deleteInFlightRef.current) return;
+    setDeleteTarget(null);
+    setDeleteError(null);
+    const trigger = returnFocusRef.current;
+    returnFocusRef.current = null;
+    // The card may have unmounted after a successful delete — fall back to
+    // the filter control so keyboard focus is never lost.
+    if (trigger && document.contains(trigger)) {
+      trigger.focus();
+    } else {
+      document.getElementById("service-approval-filter")?.focus();
+    }
+  }
+
+  async function confirmDelete() {
+    const target = deleteTarget;
+    if (!target || deleteInFlightRef.current) return;
+    deleteInFlightRef.current = true;
+    setDeleting(true);
+    setDeleteError(null);
+
+    try {
+      const message = await deleteServiceRequest(target.id);
+
+      const previousData = state.phase === "success" ? state.data : null;
+      if (previousData) {
+        const { data: nextData, needsRefetch } = applyDeletion(previousData, target.id);
+        setState({ phase: "success", data: nextData });
+        if (needsRefetch) {
+          beginLoading();
+          setPage(nextData.pagination.currentPage);
+        }
+      }
+      setNotice({ kind: "success", message });
+      deleteInFlightRef.current = false;
+      setDeleting(false);
+      closeDeleteDialog();
+      return;
+    } catch (error) {
+      deleteInFlightRef.current = false;
+      setDeleting(false);
+
+      if (error instanceof ServicesError && error.kind === "unauthorized") {
+        setDeleteTarget(null);
+        setDeleteError(null);
+        setState({ phase: "error", error });
+        return;
+      }
+      if (
+        error instanceof ServicesError &&
+        (error.kind === "notfound" ||
+          error.kind === "conflict" ||
+          error.kind === "badrequest" ||
+          error.kind === "forbidden")
+      ) {
+        setDeleteTarget(null);
+        setDeleteError(null);
+        setNotice({ kind: "error", message: error.message, showRefresh: true });
+        return;
+      }
+      // Network/server/parse failures — keep the dialog open so the
+      // technician can retry without losing context.
+      setDeleteError(
+        error instanceof ServicesError
+          ? error.message
+          : "Something went wrong while deleting this service. Please try again."
+      );
+    }
+  }
+
+  // Auto-dismiss the success notice; errors persist until dismissed.
+  useEffect(() => {
+    if (notice?.kind !== "success") return;
+    const timeout = window.setTimeout(() => setNotice(null), 6000);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
 
   const isLoading = state.phase === "loading";
   const totalItems = state.phase === "success" ? state.data.pagination.totalItems : null;
@@ -947,6 +1410,74 @@ export default function MyServices() {
         </div>
       </div>
 
+      {/* ---------- Inline notices (success / deletion errors) ---------- */}
+      {notice && (
+        <div
+          role={notice.kind === "success" ? "status" : "alert"}
+          aria-live={notice.kind === "success" ? "polite" : "assertive"}
+          className={`mt-4 flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${
+            notice.kind === "success"
+              ? "border-success/40 bg-success-soft/60 text-success"
+              : "border-error/40 bg-error-soft/60 text-error"
+          }`}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className="mt-0.5 h-5 w-5 shrink-0"
+          >
+            {notice.kind === "success" ? (
+              <>
+                <circle cx="12" cy="12" r="9" />
+                <path d="M9 12.5l2 2 4-4.5" />
+              </>
+            ) : (
+              <>
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 8v4M12 16h.01" />
+              </>
+            )}
+          </svg>
+          <p className="min-w-0 flex-1 font-medium leading-relaxed">{notice.message}</p>
+          {notice.kind === "error" && notice.showRefresh && (
+            <button
+              type="button"
+              onClick={() => {
+                setNotice(null);
+                reload();
+              }}
+              className="shrink-0 rounded-full border border-error/40 bg-surface px-3 py-1.5 text-xs font-semibold text-error transition-colors duration-200 hover:bg-error-soft"
+            >
+              Refresh list
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            aria-label="Dismiss message"
+            className="shrink-0 rounded-lg p-1 opacity-80 transition-opacity duration-200 hover:opacity-100"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="h-4 w-4"
+            >
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* ---------- Content ---------- */}
       <div className="mt-6" aria-busy={isLoading}>
         {state.phase === "loading" && <ServicesSkeleton />}
@@ -962,7 +1493,7 @@ export default function MyServices() {
             <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {state.data.items.map((service) => (
                 <li key={service.id} className="h-full">
-                  <ServiceCard service={service} />
+                  <ServiceCard service={service} onDeleteRequest={handleDeleteRequest} />
                 </li>
               ))}
             </ul>
@@ -1026,6 +1557,17 @@ export default function MyServices() {
           </>
         )}
       </div>
+
+      {/* ---------- Delete confirmation dialog ---------- */}
+      {deleteTarget && (
+        <DeleteServiceDialog
+          service={deleteTarget}
+          pending={deleting}
+          error={deleteError}
+          onDismiss={closeDeleteDialog}
+          onConfirm={confirmDelete}
+        />
+      )}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import ServiceImageUpload from "@/components/dashboard/ServiceImageUpload";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
 import {
   SERVICE_CATEGORIES,
@@ -541,7 +542,11 @@ function EditServiceForm({ serviceId, service }: { serviceId: string; service: S
       if (values.securityDeposit) payload.securityDeposit = Number(values.securityDeposit);
       if (values.maxCapacity) payload.maxCapacity = Number.parseInt(values.maxCapacity, 10);
       if (values.location !== undefined) payload.location = values.location.trim();
-      if (values.image !== undefined) payload.image = values.image.trim();
+      // An empty image means "keep the current one" — omit it entirely so the
+      // backend's strict image rule (min 1 char) is not violated.
+      if (values.image !== undefined && values.image.trim().length > 0) {
+        payload.image = values.image.trim();
+      }
       if (effectiveAmenities.length > 0) payload.amenities = effectiveAmenities;
 
       const message = await patchService(serviceId, payload);
@@ -646,9 +651,21 @@ function EditServiceForm({ serviceId, service }: { serviceId: string; service: S
           <Field id="edit-location" label="Service location" helper="2–200 characters." error={errors.location}>
             <input id="edit-location" type="text" value={values.location ?? ""} onChange={(e) => updateField("location", e.target.value)} disabled={busy} aria-invalid={Boolean(errors.location) || undefined} autoComplete="off" className={inputBase} />
           </Field>
-          <Field id="edit-image" label="Image URL" helper="http(s) link. Leave blank to keep the current image." error={errors.image}>
-            <input id="edit-image" type="url" inputMode="url" value={values.image ?? ""} onChange={(e) => updateField("image", e.target.value)} disabled={busy} aria-invalid={Boolean(errors.image) || undefined} autoComplete="off" className={inputBase} />
-          </Field>
+          <div className="sm:col-span-2">
+            <p id="edit-image" className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+              Service image
+            </p>
+            <div className="mt-1.5">
+              <ServiceImageUpload
+                id="edit-image-input"
+                mode="edit"
+                value={values.image ?? ""}
+                onChange={(url) => updateField("image", url)}
+                disabled={busy}
+                error={errors.image}
+              />
+            </div>
+          </div>
         </div>
       </fieldset>
 

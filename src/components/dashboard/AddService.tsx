@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import ServiceImageUpload from "@/components/dashboard/ServiceImageUpload";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
 import {
   SERVICE_CATEGORIES,
@@ -522,51 +523,6 @@ const FIELD_IDS: Record<string, string> = {
   amenities: "add-service-amenity-input",
 };
 
-function isHttpsUrl(value: string): boolean {
-  try {
-    const parsed = new URL(value);
-    return parsed.protocol === "http:" || parsed.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-function ImagePreview({ url }: { url: string }) {
-  const [failed, setFailed] = useState(false);
-  const show = url.trim().length > 0 && isHttpsUrl(url) && !failed;
-
-  return (
-    <div
-      aria-hidden="true"
-      className="flex h-24 w-32 shrink-0 flex-col items-center justify-center overflow-hidden rounded-xl border border-border bg-navy-900"
-    >
-      {show ? (
-        // eslint-disable-next-line @next/next/no-img-element -- backend image URLs are remote and not known at build time, so next/image remotePatterns can't be configured.
-        <img
-          src={url}
-          alt=""
-          onError={() => setFailed(true)}
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-8 w-8 text-accent-400/60"
-        >
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-          <circle cx="8.5" cy="8.5" r="1.5" />
-          <path d="m21 15-5-5L5 21" />
-        </svg>
-      )}
-    </div>
-  );
-}
-
 export default function AddServiceForm() {
   const router = useRouter();
   const submitInFlightRef = useRef(false);
@@ -939,30 +895,23 @@ export default function AddServiceForm() {
             />
           </Field>
 
-          <Field
-            id={FIELD_IDS.image}
-            label="Image URL"
-            required
-            helper="A direct http(s) image link (JPG, PNG, WebP…). Upload support is coming in a separate update."
-            error={errors.image}
-          >
-            <div className="flex items-start gap-3">
-              <input
-                id={FIELD_IDS.image}
-                type="url"
-                inputMode="url"
+          <div className="sm:col-span-2">
+            <p
+              id={FIELD_IDS.image}
+              className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted"
+            >
+              Service image <span aria-hidden="true" className="text-error">*</span>
+            </p>
+            <div className="mt-1.5">
+              <ServiceImageUpload
+                id="add-service-image-input"
                 value={values.image}
-                onChange={(e) => updateField("image", e.target.value)}
+                onChange={(url) => updateField("image", url)}
                 disabled={busy}
-                aria-invalid={Boolean(errors.image) || undefined}
-                aria-describedby={errors.image ? `${FIELD_IDS.image}-error` : `${FIELD_IDS.image}-helper`}
-                autoComplete="off"
-                placeholder="https://example.com/service.jpg"
-                className={inputBase}
+                error={errors.image}
               />
-              <ImagePreview url={values.image} />
             </div>
-          </Field>
+          </div>
         </div>
       </fieldset>
 

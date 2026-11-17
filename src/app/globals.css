@@ -1,26 +1,283 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ==========================================================================
+   FixMate — Global Design Foundation
+   Brand direction: modern, trustworthy, technology-focused repair service.
+   - Primary: deep navy (authority, trust)
+   - Accent:  fresh electric blue (energy, action)
+   - Light-first premium design with an intentional dark variant
+   ========================================================================== */
 
-@theme inline {
+/* --------------------------------------------------------------------------
+   Tailwind v4 theme tokens
+   Semantic tokens map to runtime CSS variables so utilities follow the
+   active color scheme. Raw brand scales are emitted as fixed values.
+   -------------------------------------------------------------------------- */
+@theme {
+  /* Brand scale — deep navy */
+  --color-navy-950: #050e1a;
+  --color-navy-900: #0b1b30;
+  --color-navy-800: #12263f;
+  --color-navy-700: #1b3454;
+  --color-navy-600: #274565;
+  --color-navy-100: #dbe4ef;
+
+  /* Brand scale — electric blue */
+  --color-accent-50: #eef9ff;
+  --color-accent-100: #d8efff;
+  --color-accent-400: #2fb8f5;
+  --color-accent-500: #0ea5e9;
+  --color-accent-600: #0284c7;
+  --color-accent-700: #0369a1;
+
+  /* Semantic colors */
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-heading: var(--heading);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-error: var(--error);
+  --color-error-soft: var(--error-soft);
+
+  --color-ring: var(--ring);
+
+  /* Typography */
+  --font-sans:
+    var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, sans-serif;
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.125rem;
+  --radius-2xl: 1.5rem;
+
+  /* Shadows — soft, navy-tinted (premium depth, not harsh black) */
+  --shadow-xs: 0 1px 2px rgb(11 27 48 / 0.06);
+  --shadow-sm:
+    0 1px 3px rgb(11 27 48 / 0.09), 0 1px 2px rgb(11 27 48 / 0.05);
+  --shadow-md:
+    0 6px 16px -4px rgb(11 27 48 / 0.12), 0 2px 6px -2px rgb(11 27 48 / 0.06);
+  --shadow-lg:
+    0 18px 44px -12px rgb(11 27 48 / 0.2), 0 6px 14px -6px
+    rgb(11 27 48 / 0.08);
+  --shadow-glow: 0 10px 32px -8px rgb(14 165 233 / 0.4);
 }
 
+/* --------------------------------------------------------------------------
+   Raw palette values — light theme (default)
+   -------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+
+  --background: #f4f7fc;
+  --surface: #ffffff;
+  --surface-muted: #e9edf4;
+
+  --foreground: #1e293b; /* dark slate */
+  --heading: #0b1b30; /* deep navy */
+  --muted: #64748b; /* slate gray */
+
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+
+  --primary: #0b1b30;
+  --primary-hover: #12263f;
+  --primary-foreground: #f4f9ff;
+
+  --accent: #0ea5e9; /* electric blue */
+  --accent-strong: #0284c7; /* accessible on light surfaces */
+  --accent-foreground: #04293f;
+
+  --success: #16a34a;
+  --success-soft: #e9f9ef;
+  --warning: #d97706;
+  --warning-soft: #fdf3e1;
+  --error: #dc2626;
+  --error-soft: #fdecec;
+
+  --ring: #2fb8f5;
+}
+
+/* --------------------------------------------------------------------------
+   Raw palette values — dark theme (intentional deep-navy variant)
+   -------------------------------------------------------------------------- */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    color-scheme: dark;
+
+    --background: #060d17;
+    --surface: #0d1f36;
+    --surface-muted: #12263f;
+
+    --foreground: #dbe4ef;
+    --heading: #f2f7fd;
+    --muted: #93a7bf;
+
+    --border: #1f3a5f;
+    --border-strong: #2f4f7c;
+
+    --primary: #2fb8f5; /* primary action must stay visible on navy */
+    --primary-hover: #38bdf8;
+    --primary-foreground: #04121f;
+
+    --accent: #38bdf8;
+    --accent-strong: #7dd3fc;
+    --accent-foreground: #04121f;
+
+    --success: #22c55e;
+    --success-soft: #0f2c1e;
+    --warning: #f59e0b;
+    --warning-soft: #33230a;
+    --error: #f87171;
+    --error-soft: #37161a;
+
+    --ring: #38bdf8;
+
+    /* Deeper, black-based shadows for dark surfaces */
+    --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-sm:
+      0 1px 3px rgb(0 0 0 / 0.5), 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-md:
+      0 6px 16px -4px rgb(0 0 0 / 0.55), 0 2px 6px -2px rgb(0 0 0 / 0.4);
+    --shadow-lg:
+      0 18px 44px -12px rgb(0 0 0 / 0.65), 0 6px 14px -6px
+      rgb(0 0 0 / 0.45);
+    --shadow-glow: 0 10px 36px -8px rgb(56 189 248 / 0.35);
   }
 }
 
+/* --------------------------------------------------------------------------
+   Base document styles
+   -------------------------------------------------------------------------- */
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
-  background: var(--background);
+  min-height: 100svh;
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family:
+    var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--heading);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+/* --------------------------------------------------------------------------
+   Selection — brand-tinted, accessible in both themes
+   -------------------------------------------------------------------------- */
+::selection {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+/* --------------------------------------------------------------------------
+   Focus — visible only for keyboard users
+   -------------------------------------------------------------------------- */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* --------------------------------------------------------------------------
+   Scrollbar — subtle, theme-aware
+   -------------------------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--muted) 45%, transparent);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+
+/* --------------------------------------------------------------------------
+   Reusable utilities (genuinely shared concerns only)
+   -------------------------------------------------------------------------- */
+
+/* Page-level horizontal container: consistent gutters + max width */
+@utility container-page {
+  width: 100%;
+  max-width: 80rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+
+  @media (min-width: 640px) {
+    padding-inline: 1.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    padding-inline: 2rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Reduced motion — respect user preference globally
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

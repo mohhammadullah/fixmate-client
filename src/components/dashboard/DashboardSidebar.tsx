@@ -238,6 +238,12 @@ export const DASHBOARD_NAV: Record<DashboardRole, DashboardNavItem[]> = {
       description: "Review applications to join as a technician.",
       icon: UsersGlyph,
     },
+    {
+      label: "Profile",
+      href: "/dashboard/profile",
+      description: "Your personal details and account settings.",
+      icon: ProfileGlyph,
+    },
   ],
 };
 

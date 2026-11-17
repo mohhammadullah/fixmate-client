@@ -33,6 +33,24 @@ function DashboardIcon({ className }: { className?: string }) {
   );
 }
 
+function ProfileIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
+    </svg>
+  );
+}
+
 export default function Navbar() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -148,17 +166,29 @@ export default function Navbar() {
                 className="h-9 w-28 animate-pulse rounded-full bg-surface-muted"
               />
             ) : sessionUser ? (
-              /* Signed in — Dashboard link only; identity + sign out live in the dashboard header */
-              <Link
-                href="/dashboard"
-                aria-current={isDashboardRoute ? "page" : undefined}
-                className={
-                  isDashboardRoute ? dashboardLinkActive : dashboardLinkInactive
-                }
-              >
-                <DashboardIcon className="h-4 w-4" />
-                Dashboard
-              </Link>
+              /* Signed in — dashboard + profile; identity + sign out live in the dashboard header */
+              <>
+                <Link
+                  href="/dashboard"
+                  aria-current={isDashboardRoute ? "page" : undefined}
+                  className={
+                    isDashboardRoute ? dashboardLinkActive : dashboardLinkInactive
+                  }
+                >
+                  <DashboardIcon className="h-4 w-4" />
+                  Dashboard
+                </Link>
+                <Link
+                  href="/dashboard/profile"
+                  aria-current={pathname === "/dashboard/profile" ? "page" : undefined}
+                  className={
+                    pathname === "/dashboard/profile" ? dashboardLinkActive : dashboardLinkInactive
+                  }
+                >
+                  <ProfileIcon className="h-4 w-4" />
+                  Profile
+                </Link>
+              </>
             ) : (
               /* Signed out — auth entry points */
               <>
@@ -256,20 +286,35 @@ export default function Navbar() {
                     <span className="block h-4 w-36 animate-pulse rounded bg-surface-muted" />
                   </div>
                 ) : sessionUser ? (
-                  /* Signed in — Dashboard link only; identity + sign out live in the dashboard header */
-                  <Link
-                    href="/dashboard"
-                    aria-current={isDashboardRoute ? "page" : undefined}
-                    onClick={() => setIsMenuOpen(false)}
-                    className={`flex items-center gap-3 rounded-lg px-4 py-3 text-base font-semibold transition-colors duration-200 ${
-                      isDashboardRoute
-                        ? "bg-accent-50 text-accent-strong dark:bg-surface-muted dark:text-accent"
-                        : "text-foreground hover:bg-surface-muted hover:text-heading"
-                    }`}
-                  >
-                    <DashboardIcon className="h-5 w-5 shrink-0" />
-                    Dashboard
-                  </Link>
+                  /* Signed in — dashboard + profile; identity + sign out live in the dashboard header */
+                  <>
+                    <Link
+                      href="/dashboard"
+                      aria-current={isDashboardRoute ? "page" : undefined}
+                      onClick={() => setIsMenuOpen(false)}
+                      className={`flex items-center gap-3 rounded-lg px-4 py-3 text-base font-semibold transition-colors duration-200 ${
+                        isDashboardRoute
+                          ? "bg-accent-50 text-accent-strong dark:bg-surface-muted dark:text-accent"
+                          : "text-foreground hover:bg-surface-muted hover:text-heading"
+                      }`}
+                    >
+                      <DashboardIcon className="h-5 w-5 shrink-0" />
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/dashboard/profile"
+                      aria-current={pathname === "/dashboard/profile" ? "page" : undefined}
+                      onClick={() => setIsMenuOpen(false)}
+                      className={`flex items-center gap-3 rounded-lg px-4 py-3 text-base font-semibold transition-colors duration-200 ${
+                        pathname === "/dashboard/profile"
+                          ? "bg-accent-50 text-accent-strong dark:bg-surface-muted dark:text-accent"
+                          : "text-foreground hover:bg-surface-muted hover:text-heading"
+                      }`}
+                    >
+                      <ProfileIcon className="h-5 w-5 shrink-0" />
+                      Profile
+                    </Link>
+                  </>
                 ) : (
                   /* Signed out — auth entry points */
                   <>

@@ -215,9 +215,9 @@ export const DASHBOARD_NAV: Record<DashboardRole, DashboardNavItem[]> = {
       icon: UsersGlyph,
     },
     {
-      label: "Manage Services",
-      href: "/dashboard/services",
-      description: "The service catalog FixMate offers.",
+      label: "Service Moderation",
+      href: "/dashboard/admin/services",
+      description: "Review pending services for approval.",
       icon: LayersGlyph,
     },
     {

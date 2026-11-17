@@ -176,6 +176,12 @@ const QUICK_LINKS = [
     icon: <rect x="3" y="4" width="18" height="17" rx="2" />,
   },
   {
+    label: "Service Moderation",
+    description: "Review pending service submissions.",
+    href: "/dashboard/admin/services",
+    icon: <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />,
+  },
+  {
     label: "Technician Applications",
     description: "Approve or reject applicants.",
     href: "/dashboard/admin/technician-applications",
@@ -269,6 +275,7 @@ export default function AdminDashboard() {
           <StatCard label="Total services" value={stats.totalServices} hint={`${stats.approvedServices} approved · ${stats.pendingServiceApprovals} pending`} />
           <StatCard label="Total bookings" value={stats.totalBookings} hint={`${stats.requestedBookings} requested · ${stats.inProgressBookings} in progress`} accent />
           <StatCard label="Pending applications" value={stats.pendingTechnicianApplications} hint="Awaiting admin review" />
+          <StatCard label="Pending service approvals" value={stats.pendingServiceApprovals} hint="Awaiting moderation" accent />
         </div>
       </section>
 
@@ -296,15 +303,6 @@ export default function AdminDashboard() {
               </Link>
             </li>
           ))}
-          <li>
-            <div className="flex h-full flex-col rounded-2xl border border-dashed border-border-strong bg-surface-muted/30 p-5">
-              <span aria-hidden="true" className="flex h-10 w-10 items-center justify-center rounded-xl border border-border-strong text-muted">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>
-              </span>
-              <span className="mt-3 text-sm font-bold text-heading">Service Moderation</span>
-              <span className="mt-1 text-xs leading-snug text-muted">Not available yet — no moderation route is implemented.</span>
-            </div>
-          </li>
         </ul>
       </section>
 

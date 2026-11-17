@@ -631,12 +631,31 @@ function ServiceCard({ service }: { service: TechnicianService }) {
           </ul>
         )}
 
-        {/* Footer — created date */}
+        {/* Footer — created date and actions */}
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-border pt-3">
           <p className="text-[11px] text-muted">
             <span className="font-medium text-foreground">Added</span>{" "}
             {formatServiceDate(service.createdAt)}
           </p>
+          <Link
+            href={`/dashboard/my-services/${service.id}/edit`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-[10px] font-semibold text-warning transition-colors duration-200 hover:bg-surface-muted"
+            title="Edit this service"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="h-4 w-4"
+            >
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5l-7 9L19 14.5 21 16.5l-2 7l-8-4-8 4z" />
+            </svg>
+            Edit
+          </Link>
         </div>
       </div>
     </article>

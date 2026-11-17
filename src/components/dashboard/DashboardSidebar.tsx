@@ -156,9 +156,9 @@ export const DASHBOARD_NAV: Record<DashboardRole, DashboardNavItem[]> = {
   customer: [
     OVERVIEW_ITEM,
     {
-      label: "My Repair Requests",
-      href: "/dashboard/repairs",
-      description: "Track every repair you've asked us to fix.",
+      label: "My Bookings",
+      href: "/dashboard/bookings",
+      description: "Track your repair bookings, status and payment.",
       icon: RepairRequestsGlyph,
     },
     {

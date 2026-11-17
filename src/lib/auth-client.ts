@@ -1,4 +1,5 @@
 import { createAuthClient } from "better-auth/react";
+import { inferAdditionalFields } from "better-auth/client/plugins";
 
 /**
  * FixMate authentication client.
@@ -14,6 +15,19 @@ import { createAuthClient } from "better-auth/react";
  */
 export const authClient = createAuthClient({
   baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000",
+  plugins: [
+    // Mirror the backend's Better Auth `user.additionalFields` (see
+    // fixmate-server/src/config/auth.ts) so `signUp.email()` is typed for
+    // the fields this app is allowed to set. `role` is intentionally NOT
+    // listed: the server marks it `input: false` and defaults it to
+    // "customer" — it can never be submitted from the client.
+    inferAdditionalFields({
+      user: {
+        phone: { type: "string", required: false },
+        area: { type: "string", required: false },
+      },
+    }),
+  ],
 });
 
 export const { signIn, signUp, signOut, useSession } = authClient;

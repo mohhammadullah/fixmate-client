@@ -1,19 +1,13 @@
 import Link from "next/link";
 
+const SPOTLIGHT = {
+  title: "Smartphone Screen Repair",
+  description:
+    "Cracked glass, flickering or unresponsive displays — replaced with quality components.",
+  category: "Mobile Repair",
+} as const;
+
 const SERVICES = [
-  {
-    title: "Smartphone Screen Repair",
-    description:
-      "Cracked glass, flickering or unresponsive displays — replaced with quality components.",
-    category: "Mobile Repair",
-    icon: (
-      // Smartphone with crack
-      <>
-        <rect x="7" y="2" width="10" height="20" rx="2.5" />
-        <path d="M13.5 7 11 11h3l-2.5 4" />
-      </>
-    ),
-  },
   {
     title: "Laptop Repair & Troubleshooting",
     description:
@@ -85,6 +79,10 @@ const SERVICES = [
   },
 ] as const;
 
+function serviceHref(category: string) {
+  return `/services?category=${encodeURIComponent(category)}`;
+}
+
 export default function FeaturedServices() {
   return (
     <section
@@ -92,106 +90,215 @@ export default function FeaturedServices() {
       className="relative border-t border-border bg-surface"
     >
       <div className="container-page py-14 lg:py-20">
-        {/* Heading */}
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-accent-100 bg-accent-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-accent-strong dark:border-border dark:bg-surface-muted dark:text-accent">
-            Featured
-          </span>
-          <h2
-            id="featured-services-heading"
-            className="mt-4 text-2xl font-extrabold tracking-tight text-heading sm:text-3xl"
-          >
-            Popular Repair Services
-          </h2>
-          <p className="mt-3 text-base text-muted">
+        {/* Header — editorial split */}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-xl">
+            <span className="inline-flex items-center gap-2 rounded-full border border-accent-100 bg-accent-50 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-strong dark:border-border dark:bg-surface-muted dark:text-accent">
+              Featured
+            </span>
+            <h2
+              id="featured-services-heading"
+              className="mt-4 text-2xl font-extrabold tracking-tight text-heading sm:text-3xl"
+            >
+              Popular Repair Services
+            </h2>
+          </div>
+          <p className="max-w-md text-base leading-7 text-muted lg:pb-1 lg:text-right">
             Discover reliable repair solutions for the devices and appliances
             you depend on.
           </p>
         </div>
 
-        {/* Service cards */}
-        <ul className="mt-10 grid gap-6 sm:mt-12 sm:grid-cols-2 lg:grid-cols-3">
-          {SERVICES.map((service) => (
-            <li key={service.title} className="h-full">
-              <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-border-strong hover:shadow-lg">
-                {/* Banner */}
-                <div className="relative flex h-28 shrink-0 items-center justify-center overflow-hidden bg-gradient-to-br from-navy-900 via-navy-800 to-navy-700">
-                  {/* Decorative glow + dot texture */}
-                  <div
-                    aria-hidden="true"
-                    className="absolute -left-6 -top-10 h-32 w-32 rounded-full bg-accent-500/20 blur-2xl"
-                  />
-                  <div
-                    aria-hidden="true"
-                    className="absolute -bottom-10 right-10 h-28 w-28 rounded-full bg-accent-400/10 blur-2xl"
-                  />
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute -left-1 top-2 h-24 w-24 opacity-20"
-                    style={{
-                      backgroundImage:
-                        "radial-gradient(circle, var(--color-accent-400) 1.3px, transparent 1.3px)",
-                      backgroundSize: "14px 14px",
-                    }}
-                  />
+        {/* Editorial grid — spotlight + list */}
+        <div className="mt-10 grid gap-6 sm:mt-12 lg:grid-cols-5">
+          {/* ------------------------------ Spotlight: Smartphone Screen Repair */}
+          <article className="relative flex flex-col overflow-hidden rounded-3xl border border-navy-700 bg-gradient-to-br from-navy-950 via-navy-900 to-navy-800 shadow-lg lg:col-span-3">
+            {/* Ambient glows */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -left-16 -top-16 h-64 w-64 rounded-full bg-accent-500/20 blur-3xl"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -bottom-20 right-10 h-56 w-56 rounded-full bg-accent-400/10 blur-3xl"
+            />
+            {/* Dot texture */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute right-5 top-5 h-24 w-24 opacity-25"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle, var(--color-accent-400) 1.3px, transparent 1.3px)",
+                backgroundSize: "15px 15px",
+              }}
+            />
 
-                  {/* Category label */}
-                  <span className="absolute left-4 top-4 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-accent-100 backdrop-blur-sm">
-                    {service.category}
-                  </span>
-
-                  {/* Icon */}
+            <div className="relative flex grow flex-col gap-6 p-7 sm:flex-row sm:items-center sm:p-9 lg:gap-8">
+              {/* Copy */}
+              <div className="flex max-w-xs flex-col">
+                <span className="inline-flex w-fit items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-accent-100 backdrop-blur-sm">
+                  {SPOTLIGHT.category}
+                </span>
+                <h3 className="mt-4 text-2xl font-extrabold leading-[1.15] tracking-tight text-[#f2f7fd] sm:text-3xl">
+                  {SPOTLIGHT.title}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-[#b7c6da] sm:text-base">
+                  {SPOTLIGHT.description}
+                </p>
+                <Link
+                  href={serviceHref(SPOTLIGHT.category)}
+                  aria-label="View details for Smartphone Screen Repair"
+                  className="mt-6 inline-flex w-fit items-center gap-2 rounded-full bg-accent-500 px-6 py-3 text-sm font-semibold text-[#04121f] shadow-glow transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent-400"
+                >
+                  View Details
                   <svg
                     viewBox="0 0 24 24"
-                    width="48"
-                    height="48"
+                    width="16"
+                    height="16"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="1.6"
+                    strokeWidth="2.2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     aria-hidden="true"
-                    className="h-12 w-12 text-accent-400 transition-transform duration-300 group-hover:scale-110"
+                    className="h-4 w-4"
                   >
-                    {service.icon}
+                    <path d="M5 12h14M12 5l7 7-7 7" />
                   </svg>
-                </div>
+                </Link>
+              </div>
 
-                {/* Body */}
-                <div className="flex grow flex-col p-5">
-                  <h3 className="text-lg font-bold tracking-tight text-heading">
-                    {service.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-muted">
-                    {service.description}
-                  </p>
+              {/* Illustration — smartphone with cracked screen */}
+              <svg
+                viewBox="0 0 200 220"
+                width="200"
+                height="220"
+                role="presentation"
+                fill="none"
+                className="mx-auto h-48 w-auto shrink-0 sm:h-56 lg:h-64"
+              >
+                {/* Glow ring behind phone */}
+                <circle cx="100" cy="112" r="86" stroke="#1b3454" strokeWidth="1.5" strokeDasharray="4 7" />
 
-                  <Link
-                    href={`/services?category=${encodeURIComponent(service.category)}`}
-                    aria-label={`View details for ${service.title}`}
-                    className="mt-auto inline-flex w-fit items-center gap-2 pt-5 text-sm font-semibold text-accent-strong transition-colors duration-200 hover:text-accent-600 dark:text-accent dark:hover:text-accent-400"
+                {/* Phone body */}
+                <rect x="52" y="16" width="96" height="190" rx="18" fill="#081426" stroke="#2fb8f5" strokeWidth="2.5" />
+                <path d="M88 32h24" stroke="#274565" strokeWidth="4" strokeLinecap="round" />
+                <circle cx="100" cy="188" r="6" stroke="#274565" strokeWidth="2" />
+
+                {/* Screen */}
+                <rect x="64" y="46" width="72" height="124" rx="6" fill="#0d1f36" stroke="#1b3454" strokeWidth="1.5" />
+
+                {/* Crack — lightning path across the screen */}
+                <path
+                  d="M96 52 84 92h14L82 128l30-34h-13l14-42z"
+                  fill="#2fb8f5"
+                  fillOpacity="0.18"
+                  stroke="#38bdf8"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+
+                {/* Screen UI ghost lines */}
+                <path d="M74 148h18M74 158h28" stroke="#1b3454" strokeWidth="4" strokeLinecap="round" />
+
+                {/* Orbiting wrench */}
+                <circle cx="156" cy="66" r="19" fill="#0b1b30" stroke="#2fb8f5" strokeWidth="2.2" />
+                <path
+                  d="M160.6 61.2a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.1-3.1a5.2 5.2 0 0 1-6.4 6.4l-5.6 5.6a1.7 1.7 0 0 1-2.4-2.4l5.6-5.6a5.2 5.2 0 0 1 6.4-6.4l-3.2 2.5z"
+                  stroke="#2fb8f5"
+                  strokeWidth="1.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+
+                {/* Sparkles */}
+                <path d="M38 74l2 4.4 4.4 2-4.4 2-2 4.4-2-4.4-4.4-2 4.4-2 2-4.4Z" fill="#38bdf8" fillOpacity="0.85" />
+                <circle cx="168" cy="130" r="2.2" fill="#2fb8f5" />
+                <circle cx="30" cy="130" r="2.2" fill="#38bdf8" fillOpacity="0.75" />
+              </svg>
+            </div>
+          </article>
+
+          {/* --------------------------------- Compact list: remaining five */}
+          <ul className="flex flex-col divide-y divide-border overflow-hidden rounded-3xl border border-border bg-background shadow-xs lg:col-span-2">
+            {SERVICES.map((service) => (
+              <li key={service.title} className="group flex flex-1">
+                <div className="flex flex-1 items-center gap-4 p-4 transition-colors duration-200 hover:bg-surface-muted/50 sm:gap-5 sm:p-5">
+                  {/* Icon */}
+                  <span
+                    aria-hidden="true"
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-accent-100 bg-accent-50 text-accent-strong transition-transform duration-200 group-hover:scale-105 dark:border-border dark:bg-surface-muted dark:text-accent"
                   >
-                    View Details
                     <svg
                       viewBox="0 0 24 24"
-                      width="16"
-                      height="16"
+                      width="22"
+                      height="22"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="2"
+                      strokeWidth="1.8"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      aria-hidden="true"
-                      className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1"
+                      className="h-[22px] w-[22px]"
                     >
-                      <path d="M5 12h14M12 5l7 7-7 7" />
+                      {service.icon}
                     </svg>
-                  </Link>
+                  </span>
+
+                  {/* Copy + link */}
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[10px] font-semibold uppercase tracking-wider text-muted">
+                      {service.category}
+                    </span>
+                    <span className="mt-0.5 block text-sm font-bold leading-snug text-heading sm:text-[15px]">
+                      {service.title}
+                    </span>
+                    <span className="mt-1 hidden text-xs leading-5 text-muted xl:block">
+                      {service.description}
+                    </span>
+                    <Link
+                      href={serviceHref(service.category)}
+                      aria-label={`View details for ${service.title}`}
+                      className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-accent-strong transition-colors duration-200 hover:text-accent-600 dark:text-accent dark:hover:text-accent-400"
+                    >
+                      View Details
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="12"
+                        height="12"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                        className="h-3 w-3"
+                      >
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                  </span>
+
+                  {/* Arrow affordance */}
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    className="hidden h-[18px] w-[18px] shrink-0 text-muted transition-all duration-200 group-hover:translate-x-1 group-hover:text-accent-strong sm:block dark:group-hover:text-accent"
+                  >
+                    <path d="m9 6 6 6-6 6" />
+                  </svg>
                 </div>
-              </div>
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </section>
   );

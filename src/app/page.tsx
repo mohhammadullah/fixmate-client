@@ -4,6 +4,7 @@ import ServiceCategories from "@/components/home/ServiceCategories";
 import FeaturedServices from "@/components/home/FeaturedServices";
 import HowItWorks from "@/components/home/HowItWorks";
 import WhyChooseFixMate from "@/components/home/WhyChooseFixMate";
+import Testimonials from "@/components/home/Testimonials";
 
 export default function Home() {
   return (
@@ -14,6 +15,7 @@ export default function Home() {
       <FeaturedServices />
       <HowItWorks />
       <WhyChooseFixMate />
+      <Testimonials />
     </main>
   );
 }

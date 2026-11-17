@@ -173,6 +173,12 @@ export const DASHBOARD_NAV: Record<DashboardRole, DashboardNavItem[]> = {
       description: "Your personal details and account settings.",
       icon: ProfileGlyph,
     },
+    {
+      label: "Become a Technician",
+      href: "/dashboard/become-technician",
+      description: "Apply to join FixMate as a technician.",
+      icon: BriefcaseGlyph,
+    },
   ],
   technician: [
     OVERVIEW_ITEM,
@@ -220,6 +226,12 @@ export const DASHBOARD_NAV: Record<DashboardRole, DashboardNavItem[]> = {
       href: "/dashboard/payments",
       description: "Payments and payouts across FixMate.",
       icon: CreditCardGlyph,
+    },
+    {
+      label: "Technician Applications",
+      href: "/dashboard/admin/technician-applications",
+      description: "Review applications to join as a technician.",
+      icon: UsersGlyph,
     },
   ],
 };

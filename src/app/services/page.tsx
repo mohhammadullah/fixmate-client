@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import ServicesExplorer from "@/components/services/ServicesExplorer";
+import ServicesListing from "@/components/services/ServicesListing";
 
 export const metadata: Metadata = {
   title: "Repair Services | FixMate",
@@ -31,6 +31,10 @@ export default function ServicesPage({
           aria-hidden="true"
           className="pointer-events-none absolute -top-32 left-1/2 h-96 w-[46rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-400/10 blur-3xl"
         />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute right-0 top-24 h-64 w-64 rounded-full bg-navy-800/40 blur-3xl"
+        />
 
         <div className="container-page relative py-14 lg:py-20">
           {/* Page header — static, prerendered */}
@@ -49,7 +53,7 @@ export default function ServicesPage({
             </p>
           </div>
 
-          {/* Interactive filters + results — streamed (reads searchParams) */}
+          {/* Interactive filters + API-backed results — streamed (reads searchParams) */}
           <Suspense fallback={<ServicesExplorerSkeleton />}>
             <ServicesContent searchParams={searchParams} />
           </Suspense>
@@ -59,21 +63,19 @@ export default function ServicesPage({
   );
 }
 
-async function ServicesContent({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
+async function ServicesContent({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
-  const search = firstParam(params.search).trim();
-  const category = firstParam(params.category).trim();
-  const location = firstParam(params.location).trim();
 
+  // Initialize directly from the URL so homepage search links (and shared
+  // filtered URLs) land on the correct result set.
   return (
-    <ServicesExplorer
-      initialSearch={search}
-      initialCategory={category}
-      initialLocation={location}
+    <ServicesListing
+      initialSearch={firstParam(params.search)}
+      initialCategory={firstParam(params.category)}
+      initialLocation={firstParam(params.location)}
+      initialMinPrice={firstParam(params.minPrice)}
+      initialMaxPrice={firstParam(params.maxPrice)}
+      initialSort={firstParam(params.sort) || "newest"}
     />
   );
 }
@@ -88,7 +90,7 @@ function ServicesExplorerSkeleton() {
         <div className="h-12 rounded-xl bg-surface-muted md:col-span-2 lg:col-span-4" />
         <div className="h-12 rounded-xl bg-surface-muted lg:col-span-3" />
         <div className="h-12 rounded-xl bg-surface-muted lg:col-span-2" />
-        <div className="h-12 rounded-xl bg-surface-muted md:col-span-2 lg:col-span-3" />
+        <div className="h-12 rounded-xl bg-surface-muted lg:col-span-3" />
       </div>
       <div className="mx-auto mt-12 h-40 max-w-6xl animate-pulse rounded-2xl border border-dashed border-border-strong bg-surface/60" />
     </div>

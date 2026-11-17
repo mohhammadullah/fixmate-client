@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
@@ -59,7 +59,15 @@ interface TechnicianBookingsPageData {
   pagination: BookingsPagination;
 }
 
-type BookingsErrorKind = "unauthorized" | "network" | "server" | "parse";
+type BookingsErrorKind =
+  | "unauthorized"
+  | "forbidden"
+  | "notfound"
+  | "conflict"
+  | "badrequest"
+  | "network"
+  | "server"
+  | "parse";
 
 class TechnicianBookingsError extends Error {
   readonly kind: BookingsErrorKind;
@@ -289,6 +297,125 @@ async function fetchTechnicianBookings(options: {
   return parseBookingsResponse(body);
 }
 
+/** PATCH /api/bookings/:id/(accept|reject) — technician-only transition.
+ *  The backend guard is atomic: {_id, technicianId, status:"requested"}.
+ *  No request body is required or sent; identity comes from the JWT.
+ *  Backend: 200 {success,message,data} | 400 | 401 | 403 | 404 | 409. */
+type TransitionAction = "accept" | "reject";
+
+async function transitionBooking(
+  bookingId: string,
+  action: TransitionAction
+): Promise<string> {
+  const token = await fetchAccessToken();
+
+  let response: Response;
+  try {
+    response = await fetch(
+      `${API_BASE}/api/bookings/${encodeURIComponent(bookingId)}/${action}`,
+      {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
+      }
+    );
+  } catch {
+    throw new TechnicianBookingsError(
+      "network",
+      "Couldn't reach the FixMate server. Check your connection and try again."
+    );
+  }
+
+  if (response.status === 401) {
+    throw new TechnicianBookingsError(
+      "unauthorized",
+      "Your session has expired. Sign in again to manage your bookings."
+    );
+  }
+  if (response.status === 403) {
+    throw new TechnicianBookingsError(
+      "forbidden",
+      "Technician access only. This account isn't allowed to update bookings."
+    );
+  }
+  if (response.status === 404) {
+    throw new TechnicianBookingsError(
+      "notfound",
+      "This booking could not be found. It may have been removed."
+    );
+  }
+  if (response.status === 409) {
+    throw new TechnicianBookingsError(
+      "conflict",
+      "This booking may have already changed — another technician may have accepted or rejected it. Refresh the list to see its latest status."
+    );
+  }
+  if (response.status === 400) {
+    throw new TechnicianBookingsError("badrequest", "Invalid booking reference. Refresh the list and try again.");
+  }
+
+  let body: unknown = null;
+  try {
+    body = await response.json();
+  } catch {
+    // Non-JSON body — handled below.
+  }
+
+  const serverMessage =
+    isRecord(body) && typeof body.message === "string" && body.message.length > 0 && body.message.length <= 200
+      ? body.message
+      : null;
+
+  if (!response.ok || (isRecord(body) && body.success === false)) {
+    throw new TechnicianBookingsError(
+      "server",
+      serverMessage ?? "The server couldn't update this booking. Please try again."
+    );
+  }
+
+  return serverMessage ?? (action === "accept" ? "Booking accepted successfully." : "Booking rejected successfully.");
+}
+
+/** Reflect a successful transition in the already-loaded page data without
+ *  a full reload. If an active status filter no longer matches, the booking
+ *  is removed and the pagination metadata is adjusted accordingly. */
+function applyTransition(
+  data: TechnicianBookingsPageData,
+  bookingId: string,
+  newStatus: BookingStatus,
+  statusFilter: StatusFilter
+): { data: TechnicianBookingsPageData; needsRefetch: boolean } {
+  const items = data.items.map((booking) =>
+    booking._id === bookingId
+      ? { ...booking, status: newStatus, updatedAt: new Date().toISOString() }
+      : booking
+  );
+
+  if (statusFilter === "all" || statusFilter === newStatus) {
+    return { data: { items, pagination: data.pagination }, needsRefetch: false };
+  }
+
+  const remaining = items.filter((booking) => booking._id !== bookingId);
+  const totalItems = Math.max(0, data.pagination.totalItems - 1);
+  const totalPages = Math.max(1, Math.ceil(totalItems / data.pagination.limit));
+  const currentPage = Math.min(data.pagination.currentPage, totalPages);
+
+  return {
+    data: {
+      items: remaining,
+      pagination: {
+        ...data.pagination,
+        currentPage,
+        totalItems,
+        totalPages,
+        hasNextPage: currentPage < totalPages,
+        hasPrevPage: currentPage > 1,
+      },
+    },
+    needsRefetch: remaining.length === 0 && data.pagination.currentPage > 1,
+  };
+}
+
 /* ================================================================== */
 /*  Display helpers                                                    */
 /* ================================================================== */
@@ -489,9 +616,243 @@ function EmptyState({ filtered, onClearFilter }: { filtered: boolean; onClearFil
   );
 }
 
-function BookingCard({ booking }: { booking: TechnicianBooking }) {
+/* ================================================================== */
+/*  Reject confirmation dialog — custom, accessible, no native         */
+/*  confirm()/alert(). Escape/backdrop dismiss (blocked while pending), */
+/*  focus trapped while open and restored to the trigger on close.     */
+/* ================================================================== */
+
+function RejectBookingDialog({
+  booking,
+  pending,
+  error,
+  onDismiss,
+  onConfirm,
+}: {
+  booking: TechnicianBooking;
+  pending: boolean;
+  error: string | null;
+  onDismiss: () => void;
+  onConfirm: () => void;
+}) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const keepBookingRef = useRef<HTMLButtonElement>(null);
+  const onDismissRef = useRef(onDismiss);
+  const pendingRef = useRef(pending);
+
+  useEffect(() => {
+    onDismissRef.current = onDismiss;
+    pendingRef.current = pending;
+  }, [onDismiss, pending]);
+
+  // Mount-only: initial focus on the safe action, scroll lock, Escape to
+  // dismiss and a Tab focus trap inside the dialog.
+  useEffect(() => {
+    const { body } = document;
+    const previousOverflow = body.style.overflow;
+    body.style.overflow = "hidden";
+    keepBookingRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (!pendingRef.current) onDismissRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const node = dialogRef.current;
+      if (!node) return;
+      const focusable = Array.from(
+        node.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      const focusOutside = !(active instanceof HTMLElement) || !node.contains(active);
+      if (event.shiftKey) {
+        if (active === first || focusOutside) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || focusOutside) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, true);
+      body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center sm:p-6">
+      {/* Backdrop — click to dismiss (ignored while the request is in flight) */}
+      <div
+        aria-hidden="true"
+        onClick={() => {
+          if (!pendingRef.current) onDismissRef.current();
+        }}
+        className="absolute inset-0 bg-navy-950/70 backdrop-blur-[2px]"
+      />
+
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reject-booking-title"
+        aria-describedby="reject-booking-description"
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-surface shadow-lg"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <div
+              aria-hidden="true"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-error/40 bg-error-soft text-error"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-6 w-6"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <path d="M15 9l-6 6M9 9l6 6" />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <h2 id="reject-booking-title" className="text-base font-bold leading-snug text-heading">
+                Reject this booking?
+              </h2>
+              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
+                FixMate · Incoming Bookings
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onDismiss}
+            disabled={pending}
+            aria-label="Close dialog"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="h-5 w-5"
+            >
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="px-5 py-5 sm:px-6">
+          <p id="reject-booking-description" className="text-sm leading-relaxed text-foreground">
+            You&apos;re about to reject the booking for{" "}
+            <span className="font-semibold text-heading">{booking.serviceTitle}</span> from{" "}
+            <span className="font-semibold text-heading">{booking.customerName}</span>. The
+            customer will see it as rejected and this action cannot be undone.
+          </p>
+          {error && (
+            <div
+              role="alert"
+              className="mt-4 flex items-start gap-2.5 rounded-xl border border-error/40 bg-error-soft/60 px-4 py-3 text-xs leading-relaxed text-error"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="mt-0.5 h-4 w-4 shrink-0"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 8v4M12 16h.01" />
+              </svg>
+              <span>{error}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col-reverse gap-2 border-t border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
+          <button
+            ref={keepBookingRef}
+            type="button"
+            onClick={onDismiss}
+            disabled={pending}
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={pending}
+            aria-live="polite"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-error px-5 py-2.5 text-sm font-semibold text-background shadow-sm transition-all duration-200 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {pending ? (
+              <>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                  className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                >
+                  <circle cx="12" cy="12" r="9" strokeOpacity="0.3" />
+                  <path d="M21 12a9 9 0 0 0-9-9" />
+                </svg>
+                Rejecting…
+              </>
+            ) : (
+              "Confirm Rejection"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BookingCard({
+  booking,
+  onAccept,
+  onReject,
+  actionsBusy,
+  pendingAction,
+}: {
+  booking: TechnicianBooking;
+  onAccept: (booking: TechnicianBooking, trigger: HTMLButtonElement) => void;
+  onReject: (booking: TechnicianBooking, trigger: HTMLButtonElement) => void;
+  /** Any transition is in flight — disable all action buttons. */
+  actionsBusy: boolean;
+  /** Which action is in flight for this specific booking, if any. */
+  pendingAction: TransitionAction | null;
+}) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = booking.serviceImage.length > 0 && !imageFailed;
+  const isRequested = booking.status === "requested";
 
   return (
     <article className="overflow-hidden rounded-2xl border border-border bg-surface shadow-xs transition-shadow duration-200 hover:shadow-md">
@@ -602,6 +963,94 @@ function BookingCard({ booking }: { booking: TechnicianBooking }) {
               </dd>
             </div>
           </dl>
+
+          {/* Accept / Reject — only while the booking is still requested */}
+          {isRequested && (
+            <div className="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
+              <button
+                type="button"
+                onClick={(event) => onAccept(booking, event.currentTarget)}
+                disabled={actionsBusy}
+                aria-live="polite"
+                className="inline-flex items-center gap-2 rounded-full border border-success/40 bg-success-soft/60 px-4 py-2 text-xs font-semibold text-success transition-colors duration-200 hover:bg-success-soft disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {pendingAction === "accept" ? (
+                  <>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                      aria-hidden="true"
+                      className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                    >
+                      <circle cx="12" cy="12" r="9" strokeOpacity="0.3" />
+                      <path d="M21 12a9 9 0 0 0-9-9" />
+                    </svg>
+                    Accepting…
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      className="h-4 w-4"
+                    >
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                    Accept
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={(event) => onReject(booking, event.currentTarget)}
+                disabled={actionsBusy}
+                aria-live="polite"
+                className="inline-flex items-center gap-2 rounded-full border border-error/40 bg-error-soft/50 px-4 py-2 text-xs font-semibold text-error transition-colors duration-200 hover:border-error/60 hover:bg-error-soft disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {pendingAction === "reject" ? (
+                  <>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                      aria-hidden="true"
+                      className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                    >
+                      <circle cx="12" cy="12" r="9" strokeOpacity="0.3" />
+                      <path d="M21 12a9 9 0 0 0-9-9" />
+                    </svg>
+                    Rejecting…
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      className="h-4 w-4"
+                    >
+                      <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                    Reject
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </article>
@@ -707,6 +1156,18 @@ export default function TechnicianBookings() {
     | { phase: "success"; data: TechnicianBookingsPageData }
   >({ phase: "loading" });
 
+  // Accept/Reject flow
+  const [rejectTarget, setRejectTarget] = useState<TechnicianBooking | null>(null);
+  const [rejectError, setRejectError] = useState<string | null>(null);
+  const [pending, setPending] = useState<{ bookingId: string; action: TransitionAction } | null>(null);
+  const [notice, setNotice] = useState<
+    | { kind: "success"; message: string }
+    | { kind: "error"; message: string; showRefresh: boolean }
+    | null
+  >(null);
+  const actionInFlightRef = useRef<Set<string>>(new Set());
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
   function beginLoading() {
     setState({ phase: "loading" });
   }
@@ -764,6 +1225,119 @@ export default function TechnicianBookings() {
     setStatus("all");
     setPage(1);
   }
+
+  function restoreFocus() {
+    const trigger = returnFocusRef.current;
+    returnFocusRef.current = null;
+    if (trigger && document.contains(trigger)) {
+      trigger.focus();
+    } else {
+      // The action buttons unmount once the status changes — fall back to
+      // the filter control so keyboard focus is never lost.
+      document.getElementById("technician-booking-status-filter")?.focus();
+    }
+  }
+
+  function handleAccept(booking: TechnicianBooking, trigger: HTMLButtonElement) {
+    returnFocusRef.current = trigger;
+    void runTransition(booking, "accept");
+  }
+
+  function handleRejectRequest(booking: TechnicianBooking, trigger: HTMLButtonElement) {
+    returnFocusRef.current = trigger;
+    setRejectError(null);
+    setRejectTarget(booking);
+  }
+
+  function closeRejectDialog() {
+    if (rejectTarget && actionInFlightRef.current.has(rejectTarget._id)) return;
+    setRejectTarget(null);
+    setRejectError(null);
+    restoreFocus();
+  }
+
+  async function runTransition(booking: TechnicianBooking, action: TransitionAction) {
+    // Per-booking guard — duplicate clicks/keys cannot send duplicate requests.
+    if (actionInFlightRef.current.has(booking._id)) return;
+    actionInFlightRef.current.add(booking._id);
+    setPending({ bookingId: booking._id, action });
+    setNotice(null);
+    setRejectError(null);
+
+    const nextStatus: BookingStatus = action === "accept" ? "accepted" : "rejected";
+
+    try {
+      const message = await transitionBooking(booking._id, action);
+
+      const previousData = state.phase === "success" ? state.data : null;
+      if (previousData) {
+        const { data: nextData, needsRefetch } = applyTransition(
+          previousData,
+          booking._id,
+          nextStatus,
+          status
+        );
+        setState({ phase: "success", data: nextData });
+        if (needsRefetch) {
+          beginLoading();
+          setPage(nextData.pagination.currentPage);
+        }
+      }
+      setNotice({ kind: "success", message });
+      actionInFlightRef.current.delete(booking._id);
+      setPending(null);
+      setRejectTarget(null);
+      setRejectError(null);
+      restoreFocus();
+      return;
+    } catch (error) {
+      actionInFlightRef.current.delete(booking._id);
+      setPending(null);
+
+      if (error instanceof TechnicianBookingsError && error.kind === "unauthorized") {
+        setRejectTarget(null);
+        setRejectError(null);
+        setState({ phase: "error", error });
+        return;
+      }
+      if (
+        error instanceof TechnicianBookingsError &&
+        (error.kind === "notfound" ||
+          error.kind === "conflict" ||
+          error.kind === "forbidden" ||
+          error.kind === "badrequest")
+      ) {
+        setRejectTarget(null);
+        setRejectError(null);
+        setNotice({ kind: "error", message: error.message, showRefresh: true });
+        restoreFocus();
+        return;
+      }
+      const message =
+        error instanceof TechnicianBookingsError
+          ? error.message
+          : "Something went wrong while updating this booking. Please try again.";
+      // Network/5xx failures keep the reject dialog open so the technician
+      // can retry without losing context; accepts surface an inline notice.
+      if (action === "reject" && rejectTarget?._id === booking._id) {
+        setRejectError(message);
+      } else {
+        setNotice({ kind: "error", message, showRefresh: true });
+        restoreFocus();
+      }
+    }
+  }
+
+  function confirmReject() {
+    if (rejectTarget) void runTransition(rejectTarget, "reject");
+  }
+
+  // Auto-dismiss success notices; errors persist until dismissed.
+  useEffect(() => {
+    if (notice?.kind !== "success") return;
+    const timeout = window.setTimeout(() => setNotice(null), 6000);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
 
   const isLoading = state.phase === "loading";
   const totalItems = state.phase === "success" ? state.data.pagination.totalItems : null;
@@ -841,6 +1415,74 @@ export default function TechnicianBookings() {
         </div>
       </div>
 
+      {/* ---------- Inline notices (transition feedback) ---------- */}
+      {notice && (
+        <div
+          role={notice.kind === "success" ? "status" : "alert"}
+          aria-live={notice.kind === "success" ? "polite" : "assertive"}
+          className={`mt-4 flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${
+            notice.kind === "success"
+              ? "border-success/40 bg-success-soft/60 text-success"
+              : "border-error/40 bg-error-soft/60 text-error"
+          }`}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className="mt-0.5 h-5 w-5 shrink-0"
+          >
+            {notice.kind === "success" ? (
+              <>
+                <circle cx="12" cy="12" r="9" />
+                <path d="M9 12.5l2 2 4-4.5" />
+              </>
+            ) : (
+              <>
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 8v4M12 16h.01" />
+              </>
+            )}
+          </svg>
+          <p className="min-w-0 flex-1 font-medium leading-relaxed">{notice.message}</p>
+          {notice.kind === "error" && notice.showRefresh && (
+            <button
+              type="button"
+              onClick={() => {
+                setNotice(null);
+                reload();
+              }}
+              className="shrink-0 rounded-full border border-error/40 bg-surface px-3 py-1.5 text-xs font-semibold text-error transition-colors duration-200 hover:bg-error-soft"
+            >
+              Refresh list
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            aria-label="Dismiss message"
+            className="shrink-0 rounded-lg p-1 opacity-80 transition-opacity duration-200 hover:opacity-100"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="h-4 w-4"
+            >
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* ---------- Content ---------- */}
       <div className="mt-6" aria-busy={isLoading}>
         {state.phase === "loading" && <BookingsSkeleton />}
@@ -856,7 +1498,13 @@ export default function TechnicianBookings() {
             <ul className="flex flex-col gap-4">
               {state.data.items.map((booking) => (
                 <li key={booking._id}>
-                  <BookingCard booking={booking} />
+                  <BookingCard
+                    booking={booking}
+                    onAccept={handleAccept}
+                    onReject={handleRejectRequest}
+                    actionsBusy={pending !== null}
+                    pendingAction={pending?.bookingId === booking._id ? pending.action : null}
+                  />
                 </li>
               ))}
             </ul>
@@ -919,6 +1567,17 @@ export default function TechnicianBookings() {
           </>
         )}
       </div>
+
+      {/* ---------- Reject confirmation dialog ---------- */}
+      {rejectTarget && (
+        <RejectBookingDialog
+          booking={rejectTarget}
+          pending={pending?.action === "reject" && pending.bookingId === rejectTarget._id}
+          error={rejectError}
+          onDismiss={closeRejectDialog}
+          onConfirm={confirmReject}
+        />
+      )}
     </div>
   );
 }

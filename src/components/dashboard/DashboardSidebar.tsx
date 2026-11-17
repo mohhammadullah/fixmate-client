@@ -183,8 +183,8 @@ export const DASHBOARD_NAV: Record<DashboardRole, DashboardNavItem[]> = {
       icon: BriefcaseGlyph,
     },
     {
-      label: "Incoming Requests",
-      href: "/dashboard/requests",
+      label: "Incoming Bookings",
+      href: "/dashboard/incoming-bookings",
       description: "Service requests waiting for your attention.",
       icon: InboxGlyph,
     },

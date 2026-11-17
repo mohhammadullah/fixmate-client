@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
 
@@ -17,6 +18,9 @@ interface SafeUser {
   name: string | null;
   email: string | null;
   role: Role;
+  /** The server-managed Main Admin flag — the single most powerful account on
+   *  the platform. Never accepted from client input. */
+  isMainAdmin: boolean;
   phone: string | null;
   area: string | null;
   bio: string | null;
@@ -53,6 +57,18 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PAGE_SIZE = 10;
 const DEBOUNCE_MS = 350;
 
+/** Distinct treatment per role — Main/Normal admins, technicians and customers
+ *  must be unmistakable at a glance. */
+const ROLE_BADGE_STYLES: Record<Role, string> = {
+  admin: "border-warning/40 bg-warning-soft text-warning",
+  technician:
+    "border-accent-500/40 bg-accent-50 text-accent-strong dark:border-accent-400/30 dark:bg-accent-400/10 dark:text-accent",
+  customer: "border-border-strong bg-surface-muted text-muted",
+};
+
+const MAIN_ADMIN_BADGE_STYLE =
+  "border-warning/50 bg-warning text-[#1a1200] font-bold dark:border-warning/60";
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -75,6 +91,7 @@ function parseUser(raw: unknown): SafeUser {
     name: nullableString(raw.name),
     email: nullableString(raw.email),
     role,
+    isMainAdmin: raw.isMainAdmin === true,
     phone: nullableString(raw.phone),
     area: nullableString(raw.area),
     bio: nullableString(raw.bio),
@@ -149,6 +166,50 @@ async function fetchUsers(search: string, role: RoleFilter, page: number, signal
   return parseUsersResponse(body);
 }
 
+/** Read the acting admin's own record (GET /api/admin/users/:id works for the
+ *  caller's id): only the server knows whether we are the Main Admin. The
+ *  banner "transfer ownership" button must never render speculatively. */
+async function fetchOwnAdminStatus(userId: string, signal: AbortSignal): Promise<boolean> {
+  const token = await fetchAccessToken();
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/api/admin/users/${encodeURIComponent(userId)}`, {
+      method: "GET", headers: { Authorization: `Bearer ${token}` }, credentials: "include", signal,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    throw new AdminUsersError("network", "Couldn't verify your admin status right now.");
+  }
+  if (!response.ok) {
+    throw new AdminUsersError(
+      response.status === 401 ? "unauthorized" : "server",
+      "Couldn't verify your admin status right now. Please try again."
+    );
+  }
+  const body: unknown = await response.json();
+  if (!isRecord(body) || !isRecord(body.data)) {
+    throw new AdminUsersError("parse", "The server returned an unexpected payload.");
+  }
+  return body.data.isMainAdmin === true;
+}
+
+/** Normal Admin accounts the Main Admin could transfer ownership to — any
+ *  admin that isn't the caller and doesn't already hold Main Admin status. */
+async function fetchTransferCandidates(signal: AbortSignal): Promise<SafeUser[]> {
+  const token = await fetchAccessToken();
+  const response = await fetch(`${API_BASE}/api/admin/users?role=admin&limit=50`, {
+    method: "GET", headers: { Authorization: `Bearer ${token}` }, credentials: "include", signal,
+  });
+  if (!response.ok) {
+    throw new AdminUsersError("server", "Couldn't load the admin list. Please try again.");
+  }
+  const body: unknown = await response.json();
+  if (!isRecord(body) || !Array.isArray(body.data)) {
+    throw new AdminUsersError("parse", "The server returned an unexpected admin list.");
+  }
+  return body.data.map(parseUser).filter((item) => item.role === "admin" && !item.isMainAdmin);
+}
+
 /** Approved applicant IDs — used to avoid offering technician promotion to
  *  customers who haven't completed the application workflow. */
 async function fetchApprovedApplicantIds(signal: AbortSignal): Promise<Set<string>> {
@@ -175,7 +236,7 @@ async function fetchApprovedApplicantIds(signal: AbortSignal): Promise<Set<strin
   return ids;
 }
 
-async function updateRole(userId: string, role: "customer" | "technician"): Promise<string> {
+async function updateRole(userId: string, role: Role): Promise<string> {
   const token = await fetchAccessToken();
   let response: Response;
   try {
@@ -188,16 +249,199 @@ async function updateRole(userId: string, role: "customer" | "technician"): Prom
   } catch {
     throw new AdminUsersError("network", "Couldn't reach the FixMate server. Check your connection and try again.");
   }
-  if (response.status === 401) throw new AdminUsersError("unauthorized", "Your session has expired. Sign in again.");
-  if (response.status === 403) throw new AdminUsersError("forbidden", "You can't change your own role.");
-  if (response.status === 404) throw new AdminUsersError("server", "This user no longer exists.");
-  if (response.status === 409) throw new AdminUsersError("server", "This role can't be changed right now — the user may already have the role, or an admin safety rule applies.");
   let body: unknown = null;
   try { body = await response.json(); } catch {}
+  const serverMessage =
+    isRecord(body) && typeof body.message === "string" && body.message.length > 0 && body.message.length <= 200
+      ? body.message
+      : null;
+  if (response.status === 401) throw new AdminUsersError("unauthorized", "Your session has expired. Sign in again.");
+  if (response.status === 403) throw new AdminUsersError("forbidden", serverMessage ?? "You can't change your own role.");
+  if (response.status === 404) throw new AdminUsersError("server", serverMessage ?? "This user no longer exists.");
+  if (response.status === 409) throw new AdminUsersError("server", serverMessage ?? "This role can't be changed right now — the user may already have the role, or an admin safety rule applies.");
   if (!response.ok) {
-    throw new AdminUsersError("server", isRecord(body) && typeof body.message === "string" ? body.message : "Couldn't update this role. Please try again.");
+    throw new AdminUsersError("server", serverMessage ?? "Couldn't update this role. Please try again.");
   }
-  return isRecord(body) && typeof body.message === "string" ? body.message : "Role updated.";
+  return serverMessage ?? "Role updated.";
+}
+
+async function transferMainAdmin(targetUserId: string, password: string): Promise<string> {
+  const token = await fetchAccessToken();
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/api/admin/main-admin/transfer`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ targetUserId, password }),
+    });
+  } catch {
+    throw new AdminUsersError("network", "Couldn't reach the FixMate server. Check your connection and try again.");
+  }
+  let body: unknown = null;
+  try { body = await response.json(); } catch {}
+  const serverMessage =
+    isRecord(body) && typeof body.message === "string" && body.message.length > 0 && body.message.length <= 200
+      ? body.message
+      : null;
+  if (response.status === 401) throw new AdminUsersError("unauthorized", serverMessage ?? "Re-authentication failed. Check your password and try again.");
+  if (response.status === 403) throw new AdminUsersError("forbidden", serverMessage ?? "Only the Main Admin can transfer ownership.");
+  if (response.status === 404) throw new AdminUsersError("server", "That admin account no longer exists.");
+  if (response.status === 409) throw new AdminUsersError("server", serverMessage ?? "Main Admin ownership can only be transferred to an existing Normal Admin.");
+  if (!response.ok) {
+    throw new AdminUsersError("server", serverMessage ?? "Couldn't transfer Main Admin ownership. Please try again.");
+  }
+  return serverMessage ?? "Main Admin ownership transferred.";
+}
+
+/* ================================================================== */
+/*  Transfer Main Admin dialog                                          */
+/* ================================================================== */
+
+function TransferMainAdminDialog({
+  selfId,
+  pending,
+  error,
+  onDismiss,
+  onConfirm,
+}: {
+  selfId: string;
+  pending: boolean;
+  error: string | null;
+  onDismiss: () => void;
+  onConfirm: (targetUserId: string, password: string) => void;
+}) {
+  const [candidates, setCandidates] = useState<SafeUser[] | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string>("");
+  const [password, setPassword] = useState("");
+  const [isLoadingList, setIsLoadingList] = useState(true);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let cancelled = false;
+    fetchTransferCandidates(controller.signal)
+      .then((items) => { if (cancelled) return; setCandidates(items); setIsLoadingList(false); })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setListError(error instanceof AdminUsersError ? error.message : "Couldn't load the admin list.");
+        setIsLoadingList(false);
+      });
+    return () => { cancelled = true; controller.abort(); };
+  }, []);
+
+  useEffect(() => {
+    const { body } = document;
+    const previousOverflow = body.style.overflow;
+    body.style.overflow = "hidden";
+    confirmRef.current?.focus();
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") { event.preventDefault(); if (!pending) onDismiss(); return; }
+      if (event.key !== "Tab" || pending) return;
+      const node = dialogRef.current;
+      if (!node) return;
+      const focusable = Array.from(node.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input, select, [tabindex]:not([tabindex="-1"])'));
+      if (focusable.length === 0) { event.preventDefault(); return; }
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      const outside = !(active instanceof HTMLElement) || !node.contains(active);
+      if (event.shiftKey) {
+        if (active === first || outside) { event.preventDefault(); last.focus(); }
+      } else if (active === last || outside) {
+        event.preventDefault(); first.focus();
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, true);
+      body.style.overflow = previousOverflow;
+    };
+  }, [pending, onDismiss]);
+
+  const eligible = (candidates ?? []).filter((item) => item.id !== selfId);
+  const selected = eligible.find((item) => item.id === selectedId) ?? null;
+  const canSubmit = selected !== null && password.length > 0 && !pending;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center sm:p-6">
+      <div aria-hidden="true" onClick={() => { if (!pending) onDismiss(); }} className="absolute inset-0 bg-navy-950/70 backdrop-blur-[2px]" />
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="transfer-title" aria-describedby="transfer-description" className="relative w-full max-w-md rounded-2xl border border-border bg-surface p-5 shadow-lg sm:p-6">
+        <h2 id="transfer-title" className="flex items-center gap-2.5 text-base font-bold text-heading">
+          <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-lg border border-warning/40 bg-warning-soft text-warning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+              <path d="M12 2 4 6v6c0 5 3.4 9.7 8 10 4.6-.3 8-5 8-10V6l-8-4Z" />
+              <path d="M12 9v4M12 16h.01" />
+            </svg>
+          </span>
+          Transfer Main Admin
+        </h2>
+        <p id="transfer-description" className="mt-3 text-sm leading-relaxed text-muted">
+          You are about to hand <span className="font-semibold text-heading">Main Admin ownership</span> to another
+          Admin. You will remain an Admin, but you will{" "}
+          <span className="font-semibold text-heading">no longer be able to demote admins</span> or perform any
+          Main-Admin-only action. This cannot be undone by you afterwards.
+        </p>
+
+        <label htmlFor="transfer-target" className="mt-4 block text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+          New Main Admin
+        </label>
+        {isLoadingList ? (
+          <div className="mt-1.5 h-11 w-full animate-pulse rounded-lg bg-surface-muted" aria-label="Loading admins…" />
+        ) : listError ? (
+          <div role="alert" className="mt-1.5 rounded-xl border border-error/40 bg-error-soft/60 px-4 py-3 text-xs text-error">
+            {listError}
+          </div>
+        ) : eligible.length === 0 ? (
+          <p className="mt-1.5 rounded-xl border border-dashed border-border-strong px-4 py-3 text-xs text-muted">
+            There are no other Normal Admin accounts. Promote another user to admin first.
+          </p>
+        ) : (
+          <div className="relative">
+            <select
+              id="transfer-target"
+              value={selectedId}
+              onChange={(event) => setSelectedId(event.target.value)}
+              className="mt-1.5 h-11 w-full appearance-none rounded-lg border border-border-strong bg-surface px-4 pr-10 text-sm font-medium text-foreground outline-none transition-colors duration-200 hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25"
+            >
+              <option value="">Choose an admin…</option>
+              {eligible.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name ?? item.email ?? item.id} — {item.email ?? "no email"}
+                </option>
+              ))}
+            </select>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </div>
+        )}
+
+        <label htmlFor="transfer-password" className="mt-4 block text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+          Your password (re-authentication)
+        </label>
+        <input
+          id="transfer-password"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Confirm your identity…"
+          className="mt-1.5 h-11 w-full rounded-lg border border-border-strong bg-surface px-4 text-sm text-foreground placeholder:text-muted outline-none transition-colors duration-200 hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25"
+        />
+
+        {error && <div role="alert" className="mt-4 rounded-xl border border-error/40 bg-error-soft/60 px-4 py-3 text-xs leading-relaxed text-error">{error}</div>}
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button type="button" onClick={onDismiss} disabled={pending} className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60">Cancel</button>
+          <button ref={confirmRef} type="button" disabled={!canSubmit} onClick={() => onConfirm(selected?.id ?? "", password)} aria-live="polite" className="rounded-full bg-warning px-5 py-2.5 text-sm font-semibold text-[#1a1200] shadow-sm transition-all duration-200 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60">
+            {pending ? "Transferring…" : "Transfer ownership"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /* ================================================================== */
@@ -213,12 +457,15 @@ function RoleChangeDialog({
   onConfirm,
 }: {
   user: SafeUser;
-  nextRole: "customer" | "technician";
+  nextRole: Role;
   pending: boolean;
   error: string | null;
   onDismiss: () => void;
   onConfirm: () => void;
 }) {
+  const isAdminPromotion = nextRole === "admin";
+  const isDemotion = user.role === "admin";
+  const targetName = user.name ?? "this user";
   const dialogRef = useRef<HTMLDivElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
   const onDismissRef = useRef(onDismiss);
@@ -265,17 +512,59 @@ function RoleChangeDialog({
     <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center sm:p-6">
       <div aria-hidden="true" onClick={() => { if (!pendingRef.current) onDismissRef.current(); }} className="absolute inset-0 bg-navy-950/70 backdrop-blur-[2px]" />
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="role-change-title" aria-describedby="role-change-description" className="relative w-full max-w-md rounded-2xl border border-border bg-surface p-5 shadow-lg sm:p-6">
-        <h2 id="role-change-title" className="text-base font-bold text-heading">Change account role?</h2>
-        <p id="role-change-description" className="mt-2 text-sm leading-relaxed text-muted">
-          Change <span className="font-semibold text-heading">{user.name ?? user.email ?? "this user"}</span> from{" "}
-          <span className="font-semibold text-heading">{user.role}</span> to{" "}
-          <span className="font-semibold text-heading">{nextRole}</span>? Admin roles can&apos;t be assigned here.
-        </p>
+        <h2 id="role-change-title" className="flex items-center gap-2.5 text-base font-bold text-heading">
+          {(isAdminPromotion || isDemotion) && (
+            <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-lg border border-warning/40 bg-warning-soft text-warning">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                <path d="M12 2 4 6v6c0 5 3.4 9.7 8 10 4.6-.3 8-5 8-10V6l-8-4Z" />
+                <path d="M9.5 12.5l2 2 3.5-4" />
+              </svg>
+            </span>
+          )}
+          {isAdminPromotion ? "Promote to admin?" : isDemotion ? "Demote from admin?" : "Change account role?"}
+        </h2>
+        <div id="role-change-description" className="mt-3 text-sm leading-relaxed text-muted">
+          <p>
+            {isAdminPromotion ? "Promote" : "Change"}{" "}
+            <span className="font-semibold text-heading">{targetName}</span>
+            {user.email && <> (<span className="font-medium text-foreground">{user.email}</span>)</>}{" "}
+            from <span className="font-semibold text-heading">{user.role}</span> to{" "}
+            <span className="font-semibold text-heading">{nextRole}</span>?
+          </p>
+          {isAdminPromotion && (
+            <p className="mt-2 rounded-xl border border-warning/40 bg-warning-soft/60 px-3 py-2 text-xs leading-relaxed text-warning">
+              Admins have full platform management privileges — they can manage users,
+              services, bookings, payments and applications, and can promote other admins.
+              Only the Main Admin can demote an admin, and the Main Admin can never be demoted.
+            </p>
+          )}
+          {isDemotion && (
+            <p className="mt-2 rounded-xl border border-warning/40 bg-warning-soft/60 px-3 py-2 text-xs leading-relaxed text-warning">
+              This admin immediately loses all platform management privileges — including the
+              ability to promote or demote other admins. Only the Main Admin can do this; the
+              Main Admin themself can never be demoted.
+            </p>
+          )}
+        </div>
         {error && <div role="alert" className="mt-4 rounded-xl border border-error/40 bg-error-soft/60 px-4 py-3 text-xs leading-relaxed text-error">{error}</div>}
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button type="button" onClick={onDismiss} disabled={pending} className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60">Cancel</button>
-          <button ref={confirmRef} type="button" onClick={onConfirm} disabled={pending} aria-live="polite" className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60">
-            {pending ? "Updating…" : "Confirm change"}
+          <button ref={confirmRef} type="button" onClick={onConfirm} disabled={pending} aria-live="polite" className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60">
+            {pending ? (
+              <>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" className="h-4 w-4 animate-spin motion-reduce:animate-none">
+                  <circle cx="12" cy="12" r="9" strokeOpacity="0.3" />
+                  <path d="M21 12a9 9 0 0 0-9-9" />
+                </svg>
+                {isAdminPromotion ? "Promoting…" : isDemotion ? "Demoting…" : "Updating…"}
+              </>
+            ) : isAdminPromotion ? (
+              "Promote to admin"
+            ) : isDemotion ? (
+              `Demote to ${nextRole}`
+            ) : (
+              "Confirm change"
+            )}
           </button>
         </div>
       </div>
@@ -298,6 +587,10 @@ export default function AdminUsers() {
   const [page, setPage] = useState(1);
   const [reloadToken, setReloadToken] = useState(0);
   const [approvedIds, setApprovedIds] = useState<Set<string>>(() => new Set());
+  const [actorIsMainAdmin, setActorIsMainAdmin] = useState<boolean | null>(null);
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [transferPending, setTransferPending] = useState(false);
+  const [transferError, setTransferError] = useState<string | null>(null);
 
   const [state, setState] = useState<
     | { phase: "loading" }
@@ -305,10 +598,9 @@ export default function AdminUsers() {
     | { phase: "success"; data: UsersData }
   >({ phase: "loading" });
 
-  const [changeTarget, setChangeTarget] = useState<{ user: SafeUser; nextRole: "customer" | "technician" } | null>(null);
+  const [changeTarget, setChangeTarget] = useState<{ user: SafeUser; nextRole: Role } | null>(null);
   const [changeError, setChangeError] = useState<string | null>(null);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
-  const [notice, setNotice] = useState<{ kind: "success" | "error"; message: string; refresh?: boolean } | null>(null);
   const inFlightRef = useRef<Set<string>>(new Set());
   const returnFocusRef = useRef<HTMLElement | null>(null);
 
@@ -335,17 +627,57 @@ export default function AdminUsers() {
   }, [debouncedSearch, roleFilter, page, reloadToken, isPending, user, role]);
 
   useEffect(() => {
+    if (isPending || !user || role !== "admin" || typeof user.id !== "string") return;
+    const controller = new AbortController();
+    fetchOwnAdminStatus(user.id, controller.signal)
+      .then((value) => setActorIsMainAdmin(value))
+      .catch((error: unknown) => {
+        // Fail closed: unknown status renders no Main-Admin controls.
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setActorIsMainAdmin(false);
+      });
+    return () => controller.abort();
+  }, [isPending, user, role, reloadToken]);
+
+  useEffect(() => {
     if (isPending || !user || role !== "admin") return;
     const controller = new AbortController();
     fetchApprovedApplicantIds(controller.signal).then(setApprovedIds).catch(() => setApprovedIds(new Set()));
     return () => controller.abort();
   }, [isPending, user, role, reloadToken]);
 
-  useEffect(() => {
-    if (notice?.kind !== "success") return;
-    const timeout = window.setTimeout(() => setNotice(null), 6000);
-    return () => window.clearTimeout(timeout);
-  }, [notice]);
+  async function confirmTransfer(targetUserId: string, password: string) {
+    if (transferPending) return;
+    setTransferPending(true);
+    setTransferError(null);
+    try {
+      const message = await transferMainAdmin(targetUserId, password);
+      toast.success(message);
+      setTransferOpen(false);
+      setTransferPending(false);
+      setActorIsMainAdmin(false);
+      setState({ phase: "loading" });
+      setReloadToken((token) => token + 1);
+    } catch (error) {
+      setTransferPending(false);
+      const message =
+        error instanceof Error ? error.message : "Couldn't transfer Main Admin ownership. Please try again.";
+      setTransferError(message);
+      toast.error(message);
+    }
+  }
+
+  function roleChanged(message: string) {
+    toast.success(message);
+    // Refresh from the server — the user's role is authoritative there,
+    // and this also re-applies active search/filter/pagination state.
+    setState({ phase: "loading" });
+    setReloadToken((token) => token + 1);
+  }
+
+  function roleChangeFailed(message: string) {
+    toast.error(message);
+  }
 
   function restoreFocus() {
     const trigger = returnFocusRef.current;
@@ -364,30 +696,13 @@ export default function AdminUsers() {
   async function confirmChange() {
     if (!changeTarget) return;
     const { user: target, nextRole } = changeTarget;
-    if (inFlightRef.current.has(target.id)) return;
+    if (inFlightRef.current.has(target.id)) return; // already in flight
     inFlightRef.current.add(target.id);
     setPendingUserId(target.id);
     setChangeError(null);
     try {
       const message = await updateRole(target.id, nextRole);
-      const previous = state.phase === "success" ? state.data : null;
-      if (previous) {
-        const isStillVisible = roleFilter === "all" || roleFilter === nextRole;
-        const items = isStillVisible
-          ? previous.items.map((item) => item.id === target.id ? { ...item, role: nextRole } : item)
-          : previous.items.filter((item) => item.id !== target.id);
-        const totalItems = isStillVisible ? previous.pagination.totalItems : Math.max(0, previous.pagination.totalItems - 1);
-        const totalPages = Math.max(1, Math.ceil(totalItems / previous.pagination.limit));
-        const currentPage = Math.min(previous.pagination.currentPage, totalPages);
-        setState({
-          phase: "success",
-          data: {
-            items,
-            pagination: { ...previous.pagination, currentPage, totalItems, totalPages, hasNextPage: currentPage < totalPages, hasPrevPage: currentPage > 1 },
-          },
-        });
-      }
-      setNotice({ kind: "success", message });
+      roleChanged(message);
       inFlightRef.current.delete(target.id);
       setPendingUserId(null);
       setChangeTarget(null);
@@ -403,8 +718,14 @@ export default function AdminUsers() {
         return;
       }
       setChangeError(message);
-      setNotice({ kind: "error", message, refresh: true });
+      roleChangeFailed(message);
     }
+  }
+
+  function openDialog(item: SafeUser, nextRole: Role, trigger: HTMLButtonElement) {
+    returnFocusRef.current = trigger;
+    setChangeError(null);
+    setChangeTarget({ user: item, nextRole });
   }
 
   if (isPending) return <Skeleton />;
@@ -452,8 +773,22 @@ export default function AdminUsers() {
             </select>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {totalItems !== null && <p aria-live="polite" className="text-xs font-medium tabular-nums text-muted sm:text-sm">{totalItems} user{totalItems === 1 ? "" : "s"}</p>}
+          {actorIsMainAdmin === true && (
+            <button
+              type="button"
+              onClick={() => { setTransferError(null); setTransferOpen(true); }}
+              disabled={isLoading}
+              className="inline-flex h-11 items-center gap-2 rounded-lg border border-warning/40 bg-warning-soft/40 px-4 text-xs font-semibold text-warning transition-colors duration-200 hover:border-warning/60 hover:bg-warning-soft disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-4 w-4">
+                <path d="M12 2 4 6v6c0 5 3.4 9.7 8 10 4.6-.3 8-5 8-10V6l-8-4Z" />
+                <path d="M9 14l3-3 3 3M12 11v6" />
+              </svg>
+              Transfer ownership
+            </button>
+          )}
           <button
             type="button"
             onClick={() => { setState({ phase: "loading" }); setReloadToken((token) => token + 1); }}
@@ -465,14 +800,6 @@ export default function AdminUsers() {
           </button>
         </div>
       </div>
-
-      {notice && (
-        <div role={notice.kind === "success" ? "status" : "alert"} className={`mt-4 flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${notice.kind === "success" ? "border-success/40 bg-success-soft/60 text-success" : "border-error/40 bg-error-soft/60 text-error"}`}>
-          <p className="min-w-0 flex-1 font-medium">{notice.message}</p>
-          {notice.refresh && <button type="button" onClick={() => { setNotice(null); setState({ phase: "loading" }); setReloadToken((token) => token + 1); }} className="rounded-full border border-error/40 bg-surface px-3 py-1.5 text-xs font-semibold">Refresh</button>}
-          <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss message">✕</button>
-        </div>
-      )}
 
       <div className="mt-6" aria-busy={isLoading}>
         {state.phase === "loading" && <Skeleton />}
@@ -500,10 +827,28 @@ export default function AdminUsers() {
             <ul className="grid gap-3 lg:grid-cols-2">
               {state.data.items.map((item) => {
                 const isSelf = item.id === user.id;
-                const canPromote = item.role === "customer" && approvedIds.has(item.id);
-                const canDemote = item.role === "technician";
-                const canChange = !isSelf && item.role !== "admin" && (canPromote || canDemote);
-                const nextRole: "customer" | "technician" | null = canPromote ? "technician" : canDemote ? "customer" : null;
+                const isMainItem = item.isMainAdmin;
+                const canTechnician = item.role === "customer" && approvedIds.has(item.id);
+                const canCustomer = item.role === "technician";
+                // Any existing customer/technician may be promoted to admin by
+                // an admin; admins and the acting admin are never offered an
+                // action here. The server enforces the same rules again.
+                const canAdmin = item.role !== "admin" && !isSelf;
+                // Demote: only the Main Admin may demote a Normal Admin —
+                // never themself, never the Main Admin.
+                const canDemoteAdmin =
+                  actorIsMainAdmin === true && item.role === "admin" && !isSelf && !isMainItem;
+                const helperText = isSelf
+                  ? isMainItem
+                    ? "Your account — Main Admin"
+                    : "Your account"
+                  : item.role === "admin"
+                    ? isMainItem
+                      ? "Main Admin — cannot be demoted"
+                      : "Normal Admin"
+                    : item.role === "customer" && !canTechnician
+                      ? "No approved application"
+                      : "";
                 return (
                   <li key={item.id}>
                     <article className="flex h-full flex-col rounded-2xl border border-border bg-surface p-5 shadow-xs">
@@ -512,30 +857,70 @@ export default function AdminUsers() {
                           <h3 className="text-sm font-bold text-heading">{item.name ?? "Unnamed user"}</h3>
                           <p className="mt-0.5 truncate text-xs text-muted">{item.email ?? "No email"}</p>
                         </div>
-                        <span className="rounded-full border border-border-strong bg-surface-muted px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground">{item.role}</span>
+                        <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${isMainItem ? MAIN_ADMIN_BADGE_STYLE : ROLE_BADGE_STYLES[item.role]}`}>{isMainItem ? "Main Admin" : item.role}</span>
                       </div>
                       <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-3 text-xs">
                         <div><dt className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Phone</dt><dd className="mt-0.5 text-heading">{item.phone ?? "—"}</dd></div>
                         <div><dt className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Area</dt><dd className="mt-0.5 text-heading">{item.area ?? "—"}</dd></div>
                         <div className="col-span-2"><dt className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Joined</dt><dd className="mt-0.5 text-heading">{item.createdAt ? new Date(item.createdAt).toLocaleDateString("en-GB") : "—"}</dd></div>
                       </dl>
-                      <div className="mt-auto flex items-center justify-between gap-3 border-t border-border pt-3">
+                      <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
                         <p className="text-[10px] text-muted">
-                          {isSelf ? "Your account" : item.role === "admin" ? "Admin roles are managed via bootstrap" : item.role === "customer" && !canPromote ? "No approved application" : ""}
+                          {helperText}
                         </p>
-                        {canChange && nextRole && (
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              returnFocusRef.current = event.currentTarget;
-                              setChangeError(null);
-                              setChangeTarget({ user: item, nextRole });
-                            }}
-                            disabled={pendingUserId !== null}
-                            className="rounded-full border border-accent-500/40 px-3 py-1.5 text-[11px] font-semibold text-accent-strong transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent"
-                          >
-                            Make {nextRole}
-                          </button>
+                        {(canTechnician || canCustomer || canAdmin || canDemoteAdmin) && (
+                          <div className="flex flex-wrap items-center justify-end gap-2">
+                            {canTechnician && (
+                              <button
+                                type="button"
+                                onClick={(event) => openDialog(item, "technician", event.currentTarget)}
+                                disabled={pendingUserId !== null}
+                                className="rounded-full border border-accent-500/40 px-3 py-1.5 text-[11px] font-semibold text-accent-strong transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent"
+                              >
+                                Make technician
+                              </button>
+                            )}
+                            {canCustomer && (
+                              <button
+                                type="button"
+                                onClick={(event) => openDialog(item, "customer", event.currentTarget)}
+                                disabled={pendingUserId !== null}
+                                className="rounded-full border border-accent-500/40 px-3 py-1.5 text-[11px] font-semibold text-accent-strong transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent"
+                              >
+                                Make customer
+                              </button>
+                            )}
+                            {canAdmin && (
+                              <button
+                                type="button"
+                                onClick={(event) => openDialog(item, "admin", event.currentTarget)}
+                                disabled={pendingUserId !== null}
+                                className="rounded-full border border-warning/40 bg-warning-soft/40 px-3 py-1.5 text-[11px] font-semibold text-warning transition-colors duration-200 hover:border-warning/60 hover:bg-warning-soft disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Make admin
+                              </button>
+                            )}
+                            {canDemoteAdmin && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={(event) => openDialog(item, "customer", event.currentTarget)}
+                                  disabled={pendingUserId !== null}
+                                  className="rounded-full border border-error/40 bg-error-soft/30 px-3 py-1.5 text-[11px] font-semibold text-error transition-colors duration-200 hover:border-error/60 hover:bg-error-soft disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  Demote to customer
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(event) => openDialog(item, "technician", event.currentTarget)}
+                                  disabled={pendingUserId !== null}
+                                  className="rounded-full border border-error/40 bg-error-soft/30 px-3 py-1.5 text-[11px] font-semibold text-error transition-colors duration-200 hover:border-error/60 hover:bg-error-soft disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  Demote to technician
+                                </button>
+                              </>
+                            )}
+                          </div>
                         )}
                       </div>
                     </article>
@@ -551,6 +936,16 @@ export default function AdminUsers() {
           </>
         )}
       </div>
+
+      {transferOpen && typeof user?.id === "string" && (
+        <TransferMainAdminDialog
+          selfId={user.id}
+          pending={transferPending}
+          error={transferError}
+          onDismiss={() => { if (!transferPending) { setTransferOpen(false); setTransferError(null); } }}
+          onConfirm={(targetUserId, password) => void confirmTransfer(targetUserId, password)}
+        />
+      )}
 
       {changeTarget && (
         <RoleChangeDialog

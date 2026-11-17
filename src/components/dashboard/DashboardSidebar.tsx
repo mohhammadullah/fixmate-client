@@ -202,10 +202,15 @@ export const DASHBOARD_NAV: Record<DashboardRole, DashboardNavItem[]> = {
     },
   ],
   admin: [
-    OVERVIEW_ITEM,
     {
-      label: "Manage Users",
-      href: "/dashboard/users",
+      label: "Overview",
+      href: "/dashboard/admin",
+      description: "Platform statistics and admin shortcuts.",
+      icon: OverviewGlyph,
+    },
+    {
+      label: "User Management",
+      href: "/dashboard/admin/users",
       description: "Accounts, roles and access across FixMate.",
       icon: UsersGlyph,
     },
@@ -217,7 +222,7 @@ export const DASHBOARD_NAV: Record<DashboardRole, DashboardNavItem[]> = {
     },
     {
       label: "All Bookings",
-      href: "/dashboard/bookings",
+      href: "/dashboard/admin/bookings",
       description: "Every booking across the platform, in one view.",
       icon: CalendarGlyph,
     },

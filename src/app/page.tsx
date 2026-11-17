@@ -5,6 +5,7 @@ import FeaturedServices from "@/components/home/FeaturedServices";
 import HowItWorks from "@/components/home/HowItWorks";
 import WhyChooseFixMate from "@/components/home/WhyChooseFixMate";
 import Testimonials from "@/components/home/Testimonials";
+import FinalCTA from "@/components/home/FinalCTA";
 
 export default function Home() {
   return (
@@ -16,6 +17,7 @@ export default function Home() {
       <HowItWorks />
       <WhyChooseFixMate />
       <Testimonials />
+      <FinalCTA />
     </main>
   );
 }

@@ -4,6 +4,7 @@ import ServiceCategories from "@/components/home/ServiceCategories";
 import FeaturedServices from "@/components/home/FeaturedServices";
 import HowItWorks from "@/components/home/HowItWorks";
 import WhyChooseFixMate from "@/components/home/WhyChooseFixMate";
+import AboutSection from "@/components/home/AboutSection";
 import Testimonials from "@/components/home/Testimonials";
 import FinalCTA from "@/components/home/FinalCTA";
 
@@ -16,6 +17,7 @@ export default function Home() {
       <FeaturedServices />
       <HowItWorks />
       <WhyChooseFixMate />
+      <AboutSection />
       <Testimonials />
       <FinalCTA />
     </main>

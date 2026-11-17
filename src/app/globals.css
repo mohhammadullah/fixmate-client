@@ -1,11 +1,16 @@
 @import "tailwindcss";
 
+/* Class-based dark mode: the `.dark` class on <html> (set by the inline
+   bootstrap script in layout.tsx) drives both this stylesheet's token
+   overrides and Tailwind's `dark:` utilities. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ==========================================================================
    FixMate — Global Design Foundation
    Brand direction: modern, trustworthy, technology-focused repair service.
    - Primary: deep navy (authority, trust)
    - Accent:  fresh electric blue (energy, action)
-   - Light-first premium design with an intentional dark variant
+   - Dark-by-default, with a manual Light/Dark toggle (persisted)
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -119,10 +124,11 @@
 }
 
 /* --------------------------------------------------------------------------
-   Raw palette values — dark theme (intentional deep-navy variant)
+   Raw palette values — dark theme (default; applied via `.dark` on <html>)
+   Manually toggled + persisted in localStorage by the theme bootstrap
+   script in layout.tsx. Never derived from the OS color scheme.
    -------------------------------------------------------------------------- */
-@media (prefers-color-scheme: dark) {
-  :root {
+.dark {
     color-scheme: dark;
 
     --background: #060d17;
@@ -163,7 +169,6 @@
       0 18px 44px -12px rgb(0 0 0 / 0.65), 0 6px 14px -6px
       rgb(0 0 0 / 0.45);
     --shadow-glow: 0 10px 36px -8px rgb(56 189 248 / 0.35);
-  }
 }
 
 /* --------------------------------------------------------------------------

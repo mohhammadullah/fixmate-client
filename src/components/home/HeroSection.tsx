@@ -70,7 +70,7 @@ export default function HeroSection() {
                   width="10"
                   height="10"
                   fill="none"
-                  stroke="#04293f"
+                  stroke="var(--color-accent-foreground)"
                   strokeWidth="3.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"

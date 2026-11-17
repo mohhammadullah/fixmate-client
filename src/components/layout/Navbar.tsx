@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import ThemeToggle from "@/components/layout/ThemeToggle";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
@@ -104,6 +105,7 @@ export default function Navbar() {
 
           {/* Desktop actions */}
           <div className="hidden shrink-0 items-center gap-2 md:flex">
+            <ThemeToggle />
             <Link
               href="/sign-in"
               className="rounded-full px-4 py-2 text-sm font-medium text-muted transition-colors duration-200 hover:text-heading"
@@ -118,14 +120,16 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Mobile menu toggle */}
-          <button
+          {/* Mobile: theme toggle + menu toggle */}
+          <div className="flex shrink-0 items-center gap-1 md:hidden">
+            <ThemeToggle />
+            <button
             type="button"
             onClick={() => setIsMenuOpen((open) => !open)}
             aria-expanded={isMenuOpen}
             aria-controls="mobile-menu"
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-heading transition-colors duration-200 hover:bg-surface-muted md:hidden"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-heading transition-colors duration-200 hover:bg-surface-muted"
           >
             {isMenuOpen ? (
               <svg
@@ -154,7 +158,8 @@ export default function Navbar() {
                 <path d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             )}
-          </button>
+            </button>
+          </div>
         </div>
 
         {/* Mobile menu — absolute dropdown, overlays content (no layout shift) */}

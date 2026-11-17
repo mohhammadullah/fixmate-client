@@ -23,9 +23,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        {/* Theme bootstrap — runs before first paint to avoid a theme flash.
+            Defaults to dark; restores the persisted choice from localStorage. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=window.localStorage.getItem("fixmate-theme");var d=t!=="light";var r=document.documentElement;r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light";}catch(e){document.documentElement.classList.add("dark");document.documentElement.style.colorScheme="dark";}})();`,
+          }}
+        />
         <Navbar />
         {children}
         <Footer />

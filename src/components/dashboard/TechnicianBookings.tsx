@@ -301,7 +301,99 @@ async function fetchTechnicianBookings(options: {
  *  The backend guard is atomic: {_id, technicianId, status:"requested"}.
  *  No request body is required or sent; identity comes from the JWT.
  *  Backend: 200 {success,message,data} | 400 | 401 | 403 | 404 | 409. */
-type TransitionAction = "accept" | "reject";
+type TransitionAction = "accept" | "reject" | "start" | "complete";
+
+/** Amount sent when completing a booking: finite and > 0 (backend rule). */
+type FinalAmount = number;
+
+async function updateBookingStatus(
+  bookingId: string,
+  payload: { status: "in-progress" } | { status: "completed"; finalAmount: FinalAmount }
+): Promise<string> {
+  const token = await fetchAccessToken();
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/api/bookings/${encodeURIComponent(bookingId)}/status`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new TechnicianBookingsError(
+      "network",
+      "Couldn't reach the FixMate server. Check your connection and try again."
+    );
+  }
+
+  if (response.status === 401) {
+    throw new TechnicianBookingsError(
+      "unauthorized",
+      "Your session has expired. Sign in again to manage your bookings."
+    );
+  }
+  if (response.status === 403) {
+    throw new TechnicianBookingsError(
+      "forbidden",
+      "Technician access only. This account isn't allowed to update bookings."
+    );
+  }
+  if (response.status === 404) {
+    throw new TechnicianBookingsError(
+      "notfound",
+      "This booking could not be found. It may have been removed."
+    );
+  }
+  if (response.status === 409) {
+    throw new TechnicianBookingsError(
+      "conflict",
+      "This booking may have already changed — its status moved on since you opened it. Refresh the list to see its latest status."
+    );
+  }
+
+  let body: unknown = null;
+  try {
+    body = await response.json();
+  } catch {
+    // Non-JSON body — handled below.
+  }
+
+  const serverMessage =
+    isRecord(body) && typeof body.message === "string" && body.message.length > 0 && body.message.length <= 200
+      ? body.message
+      : null;
+
+  if (response.status === 400) {
+    const fieldError =
+      isRecord(body) && Array.isArray(body.errors) && body.errors.length > 0 && isRecord(body.errors[0])
+        ? body.errors[0].message
+        : null;
+    const message =
+      typeof fieldError === "string" && fieldError.length > 0 && fieldError.length <= 200
+        ? fieldError
+        : serverMessage;
+    throw new TechnicianBookingsError(
+      "badrequest",
+      message ?? "The final amount is invalid. Enter a positive number and try again."
+    );
+  }
+
+  if (!response.ok || (isRecord(body) && body.success === false)) {
+    throw new TechnicianBookingsError(
+      "server",
+      serverMessage ?? "The server couldn't update this booking. Please try again."
+    );
+  }
+
+  return serverMessage ??
+    (payload.status === "in-progress"
+      ? "Booking marked as in-progress."
+      : "Booking completed successfully.");
+}
 
 async function transitionBooking(
   bookingId: string,
@@ -383,11 +475,17 @@ function applyTransition(
   data: TechnicianBookingsPageData,
   bookingId: string,
   newStatus: BookingStatus,
-  statusFilter: StatusFilter
+  statusFilter: StatusFilter,
+  finalAmount?: FinalAmount
 ): { data: TechnicianBookingsPageData; needsRefetch: boolean } {
   const items = data.items.map((booking) =>
     booking._id === bookingId
-      ? { ...booking, status: newStatus, updatedAt: new Date().toISOString() }
+      ? {
+          ...booking,
+          status: newStatus,
+          updatedAt: new Date().toISOString(),
+          ...(typeof finalAmount === "number" ? { finalAmount } : {}),
+        }
       : booking
   );
 
@@ -617,6 +715,283 @@ function EmptyState({ filtered, onClearFilter }: { filtered: boolean; onClearFil
 }
 
 /* ================================================================== */
+/*  Complete Work dialog — custom, accessible, no native prompts.      */
+/*  Requires a finite positive final repair amount (backend rule).     */
+/* ================================================================== */
+
+function CompleteWorkDialog({
+  booking,
+  pending,
+  error,
+  onDismiss,
+  onConfirm,
+}: {
+  booking: TechnicianBooking;
+  pending: boolean;
+  error: string | null;
+  onDismiss: () => void;
+  onConfirm: (finalAmount: FinalAmount) => void;
+}) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const amountRef = useRef<HTMLInputElement>(null);
+  const [amount, setAmount] = useState("");
+  const [amountError, setAmountError] = useState<string | null>(null);
+  const onDismissRef = useRef(onDismiss);
+  const pendingRef = useRef(pending);
+
+  useEffect(() => {
+    onDismissRef.current = onDismiss;
+    pendingRef.current = pending;
+  }, [onDismiss, pending]);
+
+  // Mount-only: focus the amount input, scroll lock, Escape to dismiss,
+  // Tab focus trap. Focus restoration is handled by the parent.
+  useEffect(() => {
+    const { body } = document;
+    const previousOverflow = body.style.overflow;
+    body.style.overflow = "hidden";
+    amountRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (!pendingRef.current) onDismissRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const node = dialogRef.current;
+      if (!node) return;
+      const focusable = Array.from(
+        node.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      const focusOutside = !(active instanceof HTMLElement) || !node.contains(active);
+      if (event.shiftKey) {
+        if (active === first || focusOutside) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || focusOutside) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, true);
+      body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmed = amount.trim();
+    const value = Number(trimmed);
+    if (trimmed.length === 0 || !Number.isFinite(value) || value <= 0) {
+      setAmountError("Enter a finite final amount greater than 0.");
+      amountRef.current?.focus();
+      return;
+    }
+    setAmountError(null);
+    onConfirm(value);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center sm:p-6">
+      {/* Backdrop — click to dismiss (ignored while the request is in flight) */}
+      <div
+        aria-hidden="true"
+        onClick={() => {
+          if (!pendingRef.current) onDismissRef.current();
+        }}
+        className="absolute inset-0 bg-navy-950/70 backdrop-blur-[2px]"
+      />
+
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="complete-booking-title"
+        aria-describedby="complete-booking-description"
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-surface shadow-lg"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <div
+              aria-hidden="true"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-success/40 bg-success-soft text-success"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-6 w-6"
+              >
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <h2 id="complete-booking-title" className="text-base font-bold leading-snug text-heading">
+                Complete work
+              </h2>
+              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
+                FixMate · Incoming Bookings
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onDismiss}
+            disabled={pending}
+            aria-label="Close dialog"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="h-5 w-5"
+            >
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="px-5 py-5 sm:px-6">
+            <p id="complete-booking-description" className="text-sm leading-relaxed text-foreground">
+              Finish the repair for{" "}
+              <span className="font-semibold text-heading">{booking.serviceTitle}</span> from{" "}
+              <span className="font-semibold text-heading">{booking.customerName}</span>.
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-muted">
+              The final repair amount you enter below will be used for the
+              customer&apos;s payment. Enter a final amount greater than 0 —
+              this is your repair charge, not a payment.
+            </p>
+
+            <div className="mt-4">
+              <label
+                htmlFor="complete-final-amount"
+                className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted"
+              >
+                Final repair amount <span aria-hidden="true" className="text-error">*</span>
+              </label>
+              <div className="relative mt-1.5">
+                <input
+                  ref={amountRef}
+                  id="complete-final-amount"
+                  type="number"
+                  inputMode="decimal"
+                  step="any"
+                  min={0}
+                  value={amount}
+                  onChange={(event) => {
+                    setAmount(event.target.value);
+                    setAmountError(null);
+                  }}
+                  disabled={pending}
+                  required
+                  aria-invalid={Boolean(amountError) || undefined}
+                  aria-describedby={amountError ? "complete-amount-error" : "complete-amount-helper"}
+                  placeholder="e.g. 1500"
+                  className="w-full rounded-lg border border-border-strong bg-surface py-2.5 pl-4 pr-4 text-sm text-foreground shadow-xs outline-none transition-colors duration-200 placeholder:text-muted hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25 aria-[invalid=true]:border-error/60"
+                />
+              </div>
+              {!amountError && (
+                <p id="complete-amount-helper" className="mt-1.5 text-[11px] leading-snug text-muted">
+                  A finite number greater than 0. No currency symbol needed.
+                </p>
+              )}
+              {amountError && (
+                <p id="complete-amount-error" role="alert" className="mt-1.5 text-[11px] font-medium text-error">
+                  {amountError}
+                </p>
+              )}
+            </div>
+
+            {error && (
+              <div
+                role="alert"
+                className="mt-4 flex items-start gap-2.5 rounded-xl border border-error/40 bg-error-soft/60 px-4 py-3 text-xs leading-relaxed text-error"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className="mt-0.5 h-4 w-4 shrink-0"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 8v4M12 16h.01" />
+                </svg>
+                <span>{error}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col-reverse gap-2 border-t border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
+            <button
+              type="button"
+              onClick={onDismiss}
+              disabled={pending}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={pending}
+              aria-live="polite"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {pending ? (
+                <>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    aria-hidden="true"
+                    className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                  >
+                    <circle cx="12" cy="12" r="9" strokeOpacity="0.3" />
+                    <path d="M21 12a9 9 0 0 0-9-9" />
+                  </svg>
+                  Completing…
+                </>
+              ) : (
+                "Mark as complete"
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================== */
 /*  Reject confirmation dialog — custom, accessible, no native         */
 /*  confirm()/alert(). Escape/backdrop dismiss (blocked while pending), */
 /*  focus trapped while open and restored to the trigger on close.     */
@@ -839,12 +1214,16 @@ function BookingCard({
   booking,
   onAccept,
   onReject,
+  onStartWork,
+  onCompleteWork,
   actionsBusy,
   pendingAction,
 }: {
   booking: TechnicianBooking;
   onAccept: (booking: TechnicianBooking, trigger: HTMLButtonElement) => void;
   onReject: (booking: TechnicianBooking, trigger: HTMLButtonElement) => void;
+  onStartWork: (booking: TechnicianBooking, trigger: HTMLButtonElement) => void;
+  onCompleteWork: (booking: TechnicianBooking, trigger: HTMLButtonElement) => void;
   /** Any transition is in flight — disable all action buttons. */
   actionsBusy: boolean;
   /** Which action is in flight for this specific booking, if any. */
@@ -1051,6 +1430,97 @@ function BookingCard({
               </button>
             </div>
           )}
+
+          {/* Workflow — accepted → in-progress → completed */}
+          {(booking.status === "accepted" || booking.status === "in-progress") && (
+            <div className="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
+              {booking.status === "accepted" ? (
+                <button
+                  type="button"
+                  onClick={(event) => onStartWork(booking, event.currentTarget)}
+                  disabled={actionsBusy}
+                  aria-live="polite"
+                  className="inline-flex items-center gap-2 rounded-full bg-accent-strong px-4 py-2 text-xs font-semibold text-accent-foreground shadow-sm transition-all duration-200 hover:bg-accent hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 dark:bg-accent dark:text-accent-foreground dark:hover:bg-accent-400"
+                >
+                  {pendingAction === "start" ? (
+                    <>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                        aria-hidden="true"
+                        className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                      >
+                        <circle cx="12" cy="12" r="9" strokeOpacity="0.3" />
+                        <path d="M21 12a9 9 0 0 0-9-9" />
+                      </svg>
+                      Starting…
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                        className="h-4 w-4"
+                      >
+                        <path d="M5 3l14 9-14 9V3Z" />
+                      </svg>
+                      Start Work
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={(event) => onCompleteWork(booking, event.currentTarget)}
+                  disabled={actionsBusy}
+                  aria-live="polite"
+                  className="inline-flex items-center gap-2 rounded-full bg-success px-4 py-2 text-xs font-semibold text-background shadow-sm transition-all duration-200 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {pendingAction === "complete" ? (
+                    <>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                        aria-hidden="true"
+                        className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                      >
+                        <circle cx="12" cy="12" r="9" strokeOpacity="0.3" />
+                        <path d="M21 12a9 9 0 0 0-9-9" />
+                      </svg>
+                      Completing…
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                        className="h-4 w-4"
+                      >
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                      Complete Work
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </article>
@@ -1156,9 +1626,11 @@ export default function TechnicianBookings() {
     | { phase: "success"; data: TechnicianBookingsPageData }
   >({ phase: "loading" });
 
-  // Accept/Reject flow
+  // Accept/Reject + workflow flow
   const [rejectTarget, setRejectTarget] = useState<TechnicianBooking | null>(null);
   const [rejectError, setRejectError] = useState<string | null>(null);
+  const [completeTarget, setCompleteTarget] = useState<TechnicianBooking | null>(null);
+  const [completeError, setCompleteError] = useState<string | null>(null);
   const [pending, setPending] = useState<{ bookingId: string; action: TransitionAction } | null>(null);
   const [notice, setNotice] = useState<
     | { kind: "success"; message: string }
@@ -1256,18 +1728,61 @@ export default function TechnicianBookings() {
     restoreFocus();
   }
 
-  async function runTransition(booking: TechnicianBooking, action: TransitionAction) {
+  function handleStartWork(booking: TechnicianBooking, trigger: HTMLButtonElement) {
+    returnFocusRef.current = trigger;
+    void runTransition(booking, "start");
+  }
+
+  function handleCompleteRequest(booking: TechnicianBooking, trigger: HTMLButtonElement) {
+    returnFocusRef.current = trigger;
+    setCompleteError(null);
+    setCompleteTarget(booking);
+  }
+
+  function closeCompleteDialog() {
+    if (completeTarget && actionInFlightRef.current.has(completeTarget._id)) return;
+    setCompleteTarget(null);
+    setCompleteError(null);
+    restoreFocus();
+  }
+
+  async function runTransition(
+    booking: TechnicianBooking,
+    action: TransitionAction,
+    finalAmount?: FinalAmount
+  ) {
     // Per-booking guard — duplicate clicks/keys cannot send duplicate requests.
     if (actionInFlightRef.current.has(booking._id)) return;
     actionInFlightRef.current.add(booking._id);
     setPending({ bookingId: booking._id, action });
     setNotice(null);
     setRejectError(null);
+    setCompleteError(null);
 
-    const nextStatus: BookingStatus = action === "accept" ? "accepted" : "rejected";
+    const nextStatus: BookingStatus =
+      action === "accept"
+        ? "accepted"
+        : action === "reject"
+          ? "rejected"
+          : action === "start"
+            ? "in-progress"
+            : "completed";
 
+    let message: string;
     try {
-      const message = await transitionBooking(booking._id, action);
+      if (action === "start") {
+        message = await updateBookingStatus(booking._id, { status: "in-progress" });
+      } else if (action === "complete") {
+        if (finalAmount === undefined) {
+          throw new TechnicianBookingsError("badrequest", "Enter a valid final amount and try again.");
+        }
+        message = await updateBookingStatus(booking._id, {
+          status: "completed",
+          finalAmount,
+        });
+      } else {
+        message = await transitionBooking(booking._id, action);
+      }
 
       const previousData = state.phase === "success" ? state.data : null;
       if (previousData) {
@@ -1275,7 +1790,8 @@ export default function TechnicianBookings() {
           previousData,
           booking._id,
           nextStatus,
-          status
+          status,
+          finalAmount
         );
         setState({ phase: "success", data: nextData });
         if (needsRefetch) {
@@ -1288,6 +1804,8 @@ export default function TechnicianBookings() {
       setPending(null);
       setRejectTarget(null);
       setRejectError(null);
+      setCompleteTarget(null);
+      setCompleteError(null);
       restoreFocus();
       return;
     } catch (error) {
@@ -1297,6 +1815,8 @@ export default function TechnicianBookings() {
       if (error instanceof TechnicianBookingsError && error.kind === "unauthorized") {
         setRejectTarget(null);
         setRejectError(null);
+        setCompleteTarget(null);
+        setCompleteError(null);
         setState({ phase: "error", error });
         return;
       }
@@ -1309,6 +1829,8 @@ export default function TechnicianBookings() {
       ) {
         setRejectTarget(null);
         setRejectError(null);
+        setCompleteTarget(null);
+        setCompleteError(null);
         setNotice({ kind: "error", message: error.message, showRefresh: true });
         restoreFocus();
         return;
@@ -1317,10 +1839,14 @@ export default function TechnicianBookings() {
         error instanceof TechnicianBookingsError
           ? error.message
           : "Something went wrong while updating this booking. Please try again.";
-      // Network/5xx failures keep the reject dialog open so the technician
-      // can retry without losing context; accepts surface an inline notice.
-      if (action === "reject" && rejectTarget?._id === booking._id) {
-        setRejectError(message);
+      // Network/5xx failures keep a confirm dialog open so the technician
+      // can retry without losing context; direct actions surface a notice.
+      if (
+        (action === "reject" && rejectTarget?._id === booking._id) ||
+        (action === "complete" && completeTarget?._id === booking._id)
+      ) {
+        if (action === "reject") setRejectError(message);
+        else setCompleteError(message);
       } else {
         setNotice({ kind: "error", message, showRefresh: true });
         restoreFocus();
@@ -1330,6 +1856,10 @@ export default function TechnicianBookings() {
 
   function confirmReject() {
     if (rejectTarget) void runTransition(rejectTarget, "reject");
+  }
+
+  function confirmComplete(finalAmount: FinalAmount) {
+    if (completeTarget) void runTransition(completeTarget, "complete", finalAmount);
   }
 
   // Auto-dismiss success notices; errors persist until dismissed.
@@ -1502,6 +2032,8 @@ export default function TechnicianBookings() {
                     booking={booking}
                     onAccept={handleAccept}
                     onReject={handleRejectRequest}
+                    onStartWork={handleStartWork}
+                    onCompleteWork={handleCompleteRequest}
                     actionsBusy={pending !== null}
                     pendingAction={pending?.bookingId === booking._id ? pending.action : null}
                   />
@@ -1576,6 +2108,17 @@ export default function TechnicianBookings() {
           error={rejectError}
           onDismiss={closeRejectDialog}
           onConfirm={confirmReject}
+        />
+      )}
+
+      {/* ---------- Complete Work dialog ---------- */}
+      {completeTarget && (
+        <CompleteWorkDialog
+          booking={completeTarget}
+          pending={pending?.action === "complete" && pending.bookingId === completeTarget._id}
+          error={completeError}
+          onDismiss={closeCompleteDialog}
+          onConfirm={confirmComplete}
         />
       )}
     </div>

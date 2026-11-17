@@ -178,7 +178,7 @@ export const DASHBOARD_NAV: Record<DashboardRole, DashboardNavItem[]> = {
     OVERVIEW_ITEM,
     {
       label: "My Services",
-      href: "/dashboard/services",
+      href: "/dashboard/my-services",
       description: "Manage the services you offer to customers.",
       icon: BriefcaseGlyph,
     },

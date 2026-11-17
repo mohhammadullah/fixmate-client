@@ -176,6 +176,12 @@ const QUICK_LINKS = [
     icon: <rect x="3" y="4" width="18" height="17" rx="2" />,
   },
   {
+    label: "Payments",
+    description: "Stripe checkout records and settlement.",
+    href: "/dashboard/admin/payments",
+    icon: <><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20M6 15h4" /></>,
+  },
+  {
     label: "Service Moderation",
     description: "Review pending service submissions.",
     href: "/dashboard/admin/services",
@@ -306,11 +312,22 @@ export default function AdminDashboard() {
         </ul>
       </section>
 
-      <section aria-label="Payment information" className="rounded-2xl border border-border bg-surface/60 px-5 py-4">
-        <p className="text-xs text-muted">
-          Successful payments: <span className="font-semibold text-heading">{stats.totalSuccessfulPaymentAmount.toLocaleString("en")}</span>
-          {" · "}{stats.paymentNote || "No verified payment records are available."}
-        </p>
+      <section aria-label="Payment management" className="rounded-2xl border border-border bg-surface/60 px-5 py-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-sm font-extrabold tracking-tight text-heading">Payments live through Stripe</h2>
+            <p className="mt-1 max-w-lg text-xs leading-relaxed text-muted">
+              Every checkout settled by Stripe webhooks — amounts, statuses and references —
+              is reconciled on the Payments page.
+            </p>
+          </div>
+          <Link href="/dashboard/admin/payments" className="inline-flex shrink-0 items-center gap-2 rounded-full border border-accent-500/40 px-5 py-2.5 text-xs font-semibold text-accent-strong transition-colors duration-200 hover:bg-surface-muted dark:text-accent">
+            Open Payments
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-4 w-4">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </Link>
+        </div>
       </section>
     </div>
   );

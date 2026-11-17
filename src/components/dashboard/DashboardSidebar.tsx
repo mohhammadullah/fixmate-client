@@ -228,8 +228,8 @@ export const DASHBOARD_NAV: Record<DashboardRole, DashboardNavItem[]> = {
     },
     {
       label: "Payments",
-      href: "/dashboard/payments",
-      description: "Payments and payouts across FixMate.",
+      href: "/dashboard/admin/payments",
+      description: "Stripe checkout payments and settlement across FixMate.",
       icon: CreditCardGlyph,
     },
     {

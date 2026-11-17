@@ -31,8 +31,8 @@ export default function AdminUsersPage() {
             </span>
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#a8bdd4]">
-            Find accounts and manage roles within the rules of the technician
-            application workflow. Admin roles are never assigned here.
+            Find accounts; promote existing customers and technicians to admin, and demote
+            admins when you hold Main Admin privileges.
           </p>
         </div>
       </section>

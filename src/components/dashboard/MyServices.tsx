@@ -334,19 +334,14 @@ function Badge({ label, className }: { label: string; className: string }) {
 }
 
 /* ================================================================== */
-/*  Add New Service CTA — the creation route does not exist yet, so    */
-/*  the button is honestly disabled instead of linking to a dead page. */
+/*  Add New Service CTA — links to the technician creation page.       */
 /* ================================================================== */
 
 function AddNewServiceButton({ className = "" }: { className?: string }) {
   return (
-    <button
-      type="button"
-      disabled
-      title="Service creation is launching soon. It isn't available yet."
-      aria-disabled="true"
-      aria-label="Add New Service — coming soon, not yet available"
-      className={`inline-flex items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow-sm opacity-60 cursor-not-allowed sm:px-5 sm:text-sm ${className}`}
+    <Link
+      href="/dashboard/my-services/add"
+      className={`inline-flex items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md sm:px-5 sm:text-sm ${className}`}
     >
       <svg
         viewBox="0 0 24 24"
@@ -361,13 +356,8 @@ function AddNewServiceButton({ className = "" }: { className?: string }) {
         <path d="M12 5v14M5 12h14" />
       </svg>
       <span className="hidden sm:inline">Add New Service</span>
-      <span
-        aria-hidden="true"
-        className="rounded-full border border-primary-foreground/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em]"
-      >
-        Soon
-      </span>
-    </button>
+      <span className="sr-only">(opens the add service page)</span>
+    </Link>
   );
 }
 
@@ -496,15 +486,12 @@ function EmptyState({ filtered, onClearFilter }: { filtered: boolean; onClearFil
       </div>
       <h2 className="mt-5 text-xl font-bold tracking-tight text-heading">No services yet</h2>
       <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
-        You haven&apos;t published any services yet. Once you add your first
-        service, it will show up here with its approval status, availability,
-        pricing and capacity.
+        You haven&apos;t published any services yet. Add your first service and it
+        will show up here with its approval status, availability, pricing and
+        capacity.
       </p>
       <div className="mt-6 flex flex-col items-center gap-2">
         <AddNewServiceButton />
-        <p className="text-[11px] font-medium text-muted">
-          Service creation is launching soon.
-        </p>
       </div>
     </div>
   );

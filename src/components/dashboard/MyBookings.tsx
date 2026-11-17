@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 
@@ -73,7 +73,13 @@ interface BookingsPageData {
   pagination: BookingsPagination;
 }
 
-type BookingsErrorKind = "unauthorized" | "network" | "server" | "parse";
+type BookingsErrorKind =
+  | "unauthorized"
+  | "network"
+  | "server"
+  | "parse"
+  | "notfound"
+  | "conflict";
 
 class BookingsError extends Error {
   readonly kind: BookingsErrorKind;
@@ -314,6 +320,131 @@ async function fetchMyBookings(options: {
   return parseBookingsResponse(body);
 }
 
+/** PATCH /api/bookings/:id/cancel — the customer cancels their own
+ *  "requested" booking. Sends an empty JSON object (the backend's strict
+ *  object schema accepts nothing else) — never a customerId, never a
+ *  status. The JWT is retrieved per call and never stored or logged.
+ *  Returns the server's success message. */
+async function cancelBookingRequest(bookingId: string): Promise<string> {
+  const token = await fetchAccessToken();
+
+  let response: Response;
+  try {
+    response = await fetch(
+      `${API_BASE}/api/bookings/${encodeURIComponent(bookingId)}/cancel`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: "{}",
+      }
+    );
+  } catch {
+    throw new BookingsError(
+      "network",
+      "Couldn't reach the FixMate server. Check your connection and try again."
+    );
+  }
+
+  if (response.status === 401) {
+    throw new BookingsError(
+      "unauthorized",
+      "Your session has expired. Sign in again to manage your bookings."
+    );
+  }
+
+  let body: unknown = null;
+  try {
+    body = await response.json();
+  } catch {
+    // Non-JSON body — handled by the status checks below.
+  }
+
+  const serverMessage =
+    isRecord(body) &&
+    typeof body.message === "string" &&
+    body.message.length > 0 &&
+    body.message.length <= 200
+      ? body.message
+      : null;
+
+  if (response.status === 404) {
+    throw new BookingsError(
+      "notfound",
+      serverMessage ??
+        "We couldn't find this booking. It may have already been cancelled or removed."
+    );
+  }
+
+  if (response.status === 409) {
+    throw new BookingsError(
+      "conflict",
+      serverMessage ??
+        "This booking is no longer in a state that allows cancellation."
+    );
+  }
+
+  if (!response.ok) {
+    throw new BookingsError(
+      "server",
+      serverMessage ?? "The server couldn't cancel this booking. Please try again."
+    );
+  }
+
+  if (isRecord(body) && body.success === false) {
+    throw new BookingsError(
+      "server",
+      serverMessage ?? "The server couldn't cancel this booking. Please try again."
+    );
+  }
+
+  return serverMessage ?? "Booking cancelled successfully.";
+}
+
+/** Apply a successful cancellation to the already-loaded page data.
+ *
+ *  - "all" / "cancelled" filters: the card stays in place, re-badged as
+ *    cancelled, and the totals are unchanged.
+ *  - any other filter: the booking no longer matches, so it is removed from
+ *    the visible page and the totals are decremented; the current page is
+ *    clamped to the new page range. */
+function applyCancellation(
+  data: BookingsPageData,
+  bookingId: string,
+  statusFilter: BookingStatus | "all",
+  cancelledAt: string
+): BookingsPageData {
+  const items = data.items.map((booking) =>
+    booking._id === bookingId
+      ? { ...booking, status: "cancelled" as const, updatedAt: cancelledAt }
+      : booking
+  );
+
+  if (statusFilter === "all" || statusFilter === "cancelled") {
+    return { items, pagination: data.pagination };
+  }
+
+  const remaining = items.filter((booking) => booking._id !== bookingId);
+  const totalItems = Math.max(0, data.pagination.totalItems - 1);
+  const totalPages = Math.max(1, Math.ceil(totalItems / data.pagination.limit));
+  const currentPage = Math.min(data.pagination.currentPage, totalPages);
+
+  return {
+    items: remaining,
+    pagination: {
+      ...data.pagination,
+      currentPage,
+      totalItems,
+      totalPages,
+      hasNextPage: currentPage < totalPages,
+      hasPrevPage: currentPage > 1,
+    },
+  };
+}
+
 /* ================================================================== */
 /*  Display helpers                                                    */
 /* ================================================================== */
@@ -536,7 +667,13 @@ function EmptyState({ filtered, onClearFilter }: { filtered: boolean; onClearFil
   );
 }
 
-function BookingCard({ booking }: { booking: CustomerBooking }) {
+function BookingCard({
+  booking,
+  onCancelRequest,
+}: {
+  booking: CustomerBooking;
+  onCancelRequest: (booking: CustomerBooking, trigger: HTMLButtonElement) => void;
+}) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = booking.serviceImage.length > 0 && !imageFailed;
 
@@ -652,6 +789,35 @@ function BookingCard({ booking }: { booking: CustomerBooking }) {
               </dd>
             </div>
           </dl>
+
+          {/* Cancellation — only while the booking is still awaiting the technician */}
+          {booking.status === "requested" && (
+            <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-4">
+              <p className="text-[11px] font-medium leading-snug text-muted">
+                You can cancel while the technician hasn&apos;t responded yet.
+              </p>
+              <button
+                type="button"
+                onClick={(event) => onCancelRequest(booking, event.currentTarget)}
+                className="inline-flex shrink-0 items-center gap-2 rounded-full border border-error/40 bg-error-soft/50 px-4 py-2 text-xs font-semibold text-error transition-colors duration-200 hover:border-error/60 hover:bg-error-soft"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className="h-4 w-4"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M15 9l-6 6M9 9l6 6" />
+                </svg>
+                Cancel booking
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </article>
@@ -659,8 +825,278 @@ function BookingCard({ booking }: { booking: CustomerBooking }) {
 }
 
 /* ================================================================== */
+/*  Cancel confirmation dialog — custom, accessible, never native      */
+/*  confirm()/alert(). Focus is trapped while open, Escape dismisses, */
+/*  and focus returns to the triggering button on close.              */
+/* ================================================================== */
+
+function CancelBookingDialog({
+  booking,
+  pending,
+  error,
+  onDismiss,
+  onConfirm,
+}: {
+  booking: CustomerBooking;
+  pending: boolean;
+  error: string | null;
+  onDismiss: () => void;
+  onConfirm: () => void;
+}) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const keepBookingRef = useRef<HTMLButtonElement>(null);
+  const onDismissRef = useRef(onDismiss);
+  const pendingRef = useRef(pending);
+
+  // Keep refs current for the mount-only listeners below.
+  useEffect(() => {
+    onDismissRef.current = onDismiss;
+    pendingRef.current = pending;
+  }, [onDismiss, pending]);
+
+  // Mount-only: initial focus (the safe action), body scroll lock,
+  // Escape to dismiss and a Tab focus trap inside the dialog.
+  useEffect(() => {
+    const { body } = document;
+    const previousOverflow = body.style.overflow;
+    body.style.overflow = "hidden";
+    keepBookingRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (!pendingRef.current) onDismissRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const node = dialogRef.current;
+      if (!node) return;
+      const focusable = Array.from(
+        node.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      const focusOutside =
+        !(active instanceof HTMLElement) || !node.contains(active);
+      if (event.shiftKey) {
+        if (active === first || focusOutside) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || focusOutside) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, true);
+      body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center sm:p-6">
+      {/* Backdrop — click to dismiss (ignored while the request is in flight) */}
+      <div
+        aria-hidden="true"
+        onClick={() => {
+          if (!pendingRef.current) onDismissRef.current();
+        }}
+        className="absolute inset-0 bg-navy-950/70 backdrop-blur-[2px]"
+      />
+
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cancel-booking-title"
+        aria-describedby="cancel-booking-description"
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-surface shadow-lg"
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <div
+              aria-hidden="true"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-error/40 bg-error-soft text-error"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-6 w-6"
+              >
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <path d="M12 9v4M12 17h.01" />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <h2
+                id="cancel-booking-title"
+                className="text-base font-bold leading-snug text-heading"
+              >
+                Cancel this booking?
+              </h2>
+              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
+                FixMate · My Bookings
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onDismiss}
+            disabled={pending}
+            aria-label="Close dialog"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="h-5 w-5"
+            >
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-5 py-5 sm:px-6">
+          <p
+            id="cancel-booking-description"
+            className="text-sm leading-relaxed text-foreground"
+          >
+            This action cannot be undone. Your booking for{" "}
+            <span className="font-semibold text-heading">
+              {booking.serviceTitle}
+            </span>{" "}
+            with{" "}
+            <span className="font-semibold text-heading">
+              {booking.technicianName}
+            </span>{" "}
+            will be marked as cancelled and the reserved time will be released.
+            If you change your mind, you&apos;ll need to make a new booking.
+          </p>
+
+          {/* Booking summary */}
+          <dl className="mt-4 grid grid-cols-1 gap-2 rounded-xl border border-border bg-surface-muted/40 px-4 py-3 text-xs sm:grid-cols-3">
+            <div className="min-w-0">
+              <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+                Service
+              </dt>
+              <dd className="mt-0.5 truncate font-medium text-heading">
+                {booking.serviceTitle}
+              </dd>
+            </div>
+            <div className="min-w-0">
+              <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+                Technician
+              </dt>
+              <dd className="mt-0.5 truncate font-medium text-heading">
+                {booking.technicianName}
+              </dd>
+            </div>
+            <div className="min-w-0">
+              <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+                Booked
+              </dt>
+              <dd className="mt-0.5 font-medium text-heading">
+                {formatBookingDate(booking.createdAt)}
+              </dd>
+            </div>
+          </dl>
+
+          {/* In-dialog error — network/server failures can be retried */}
+          {error && (
+            <div
+              role="alert"
+              className="mt-4 flex items-start gap-2.5 rounded-xl border border-error/40 bg-error-soft/60 px-4 py-3 text-xs leading-relaxed text-error"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="mt-0.5 h-4 w-4 shrink-0"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 8v4M12 16h.01" />
+              </svg>
+              <span>{error}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Footer actions */}
+        <div className="flex flex-col-reverse gap-2 border-t border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
+          <button
+            ref={keepBookingRef}
+            type="button"
+            onClick={onDismiss}
+            disabled={pending}
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={pending}
+            aria-live="polite"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-error px-5 py-2.5 text-sm font-semibold text-background shadow-sm transition-all duration-200 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {pending ? (
+              <>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                  className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                >
+                  <circle cx="12" cy="12" r="9" strokeOpacity="0.3" />
+                  <path d="M21 12a9 9 0 0 0-9-9" />
+                </svg>
+                Cancelling…
+              </>
+            ) : (
+              "Confirm Cancellation"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================== */
 /*  Main component                                                     */
 /* ================================================================== */
+
+type BookingsNotice =
+  | { kind: "success"; message: string }
+  | { kind: "error"; message: string; showRefresh: boolean };
 
 export default function MyBookings() {
   const [page, setPage] = useState(1);
@@ -672,6 +1108,14 @@ export default function MyBookings() {
     | { phase: "error"; error: BookingsError }
     | { phase: "success"; data: BookingsPageData }
   >({ phase: "loading" });
+
+  // Cancellation flow
+  const [cancelTarget, setCancelTarget] = useState<CustomerBooking | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<BookingsNotice | null>(null);
+  const cancelInFlightRef = useRef(false);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   // Handlers set the "loading" phase synchronously (event handlers may
   // setState freely); the effect only talks to the network.
@@ -726,6 +1170,101 @@ export default function MyBookings() {
     beginLoading();
     setReloadToken((token) => token + 1);
   }
+
+  function handleRequestCancel(booking: CustomerBooking, trigger: HTMLButtonElement) {
+    returnFocusRef.current = trigger;
+    setCancelError(null);
+    setCancelTarget(booking);
+  }
+
+  function closeCancelDialog() {
+    // Never dismiss mid-request — that would allow duplicate submissions.
+    if (cancelInFlightRef.current) return;
+    setCancelTarget(null);
+    setCancelError(null);
+    const trigger = returnFocusRef.current;
+    returnFocusRef.current = null;
+    // The card may have unmounted after a successful cancel — fall back to
+    // the filter control so keyboard focus is never lost.
+    if (trigger && document.contains(trigger)) {
+      trigger.focus();
+    } else {
+      document.getElementById("booking-status-filter")?.focus();
+    }
+  }
+
+  async function confirmCancellation() {
+    const target = cancelTarget;
+    if (!target || cancelInFlightRef.current) return;
+    cancelInFlightRef.current = true;
+    setCancelling(true);
+    setCancelError(null);
+
+    try {
+      const message = await cancelBookingRequest(target._id);
+
+      const previousData = state.phase === "success" ? state.data : null;
+      if (previousData) {
+        const nextData = applyCancellation(
+          previousData,
+          target._id,
+          status,
+          new Date().toISOString()
+        );
+        setState({ phase: "success", data: nextData });
+        // The page emptied out under an active filter — step back a page.
+        if (
+          nextData.items.length === 0 &&
+          previousData.pagination.currentPage > 1
+        ) {
+          beginLoading();
+          setPage(nextData.pagination.currentPage);
+        }
+      }
+
+      setNotice({ kind: "success", message });
+      cancelInFlightRef.current = false;
+      setCancelling(false);
+      closeCancelDialog();
+      return;
+    } catch (error) {
+      cancelInFlightRef.current = false;
+      setCancelling(false);
+
+      if (error instanceof BookingsError && error.kind === "unauthorized") {
+        // Consistent with the list's 401 path — full session-expired panel.
+        setCancelTarget(null);
+        setCancelError(null);
+        setState({ phase: "error", error });
+        return;
+      }
+      if (
+        error instanceof BookingsError &&
+        (error.kind === "notfound" || error.kind === "conflict")
+      ) {
+        // The booking is gone or has moved on — close the dialog and let
+        // the user refresh the list to resync.
+        setCancelTarget(null);
+        setCancelError(null);
+        setNotice({ kind: "error", message: error.message, showRefresh: true });
+        return;
+      }
+      // Network/server/parse failures — keep the dialog open so the
+      // customer can retry.
+      setCancelError(
+        error instanceof BookingsError
+          ? error.message
+          : "Something went wrong while cancelling this booking. Please try again."
+      );
+    }
+  }
+
+  // Auto-dismiss the success notice; errors persist until dismissed.
+  useEffect(() => {
+    if (notice?.kind !== "success") return;
+    const timeout = window.setTimeout(() => setNotice(null), 6000);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
 
   const isLoading = state.phase === "loading";
   const totalItems = state.phase === "success" ? state.data.pagination.totalItems : null;
@@ -803,6 +1342,76 @@ export default function MyBookings() {
         </div>
       </div>
 
+      {/* ---------- Inline notices (success / cancellation errors) ---------- */}
+      {notice && (
+        <div
+          role={notice.kind === "success" ? "status" : "alert"}
+          aria-live={notice.kind === "success" ? "polite" : "assertive"}
+          className={`mt-4 flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${
+            notice.kind === "success"
+              ? "border-success/40 bg-success-soft/60 text-success"
+              : "border-error/40 bg-error-soft/60 text-error"
+          }`}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className="mt-0.5 h-5 w-5 shrink-0"
+          >
+            {notice.kind === "success" ? (
+              <>
+                <circle cx="12" cy="12" r="9" />
+                <path d="M9 12.5l2 2 4-4.5" />
+              </>
+            ) : (
+              <>
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 8v4M12 16h.01" />
+              </>
+            )}
+          </svg>
+          <p className="min-w-0 flex-1 font-medium leading-relaxed">
+            {notice.message}
+          </p>
+          {notice.kind === "error" && notice.showRefresh && (
+            <button
+              type="button"
+              onClick={() => {
+                setNotice(null);
+                reload();
+              }}
+              className="shrink-0 rounded-full border border-error/40 bg-surface px-3 py-1.5 text-xs font-semibold text-error transition-colors duration-200 hover:bg-error-soft"
+            >
+              Refresh list
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            aria-label="Dismiss message"
+            className="shrink-0 rounded-lg p-1 opacity-80 transition-opacity duration-200 hover:opacity-100"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="h-4 w-4"
+            >
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* ---------- Content ---------- */}
       <div className="mt-6" aria-busy={isLoading}>
         {state.phase === "loading" && <BookingsSkeleton />}
@@ -820,7 +1429,7 @@ export default function MyBookings() {
             <ul className="flex flex-col gap-4">
               {state.data.items.map((booking) => (
                 <li key={booking._id}>
-                  <BookingCard booking={booking} />
+                  <BookingCard booking={booking} onCancelRequest={handleRequestCancel} />
                 </li>
               ))}
             </ul>
@@ -884,6 +1493,17 @@ export default function MyBookings() {
           </>
         )}
       </div>
+
+      {/* ---------- Cancel confirmation dialog ---------- */}
+      {cancelTarget && (
+        <CancelBookingDialog
+          booking={cancelTarget}
+          pending={cancelling}
+          error={cancelError}
+          onDismiss={closeCancelDialog}
+          onConfirm={confirmCancellation}
+        />
+      )}
     </div>
   );
 }

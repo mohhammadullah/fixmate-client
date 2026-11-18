@@ -111,7 +111,6 @@ export default function FeaturedServices() {
 
         {/* Editorial grid — spotlight + list */}
         <div className="mt-10 grid gap-6 sm:mt-12 lg:grid-cols-5">
-          {/* ------------------------------ Spotlight: Smartphone Screen Repair */}
           <article className="relative flex flex-col overflow-hidden rounded-3xl border border-navy-700 bg-gradient-to-br from-navy-950 via-navy-900 to-navy-800 shadow-lg lg:col-span-3">
             {/* Ambient glows */}
             <div
@@ -134,7 +133,6 @@ export default function FeaturedServices() {
             />
 
             <div className="relative flex grow flex-col gap-6 p-7 sm:flex-row sm:items-center sm:p-9 lg:gap-8">
-              {/* Copy */}
               <div className="flex max-w-xs flex-col">
                 <span className="inline-flex w-fit items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-accent-100 backdrop-blur-sm">
                   {SPOTLIGHT.category}
@@ -220,7 +218,6 @@ export default function FeaturedServices() {
             </div>
           </article>
 
-          {/* --------------------------------- Compact list: remaining five */}
           <ul className="flex flex-col divide-y divide-border overflow-hidden rounded-3xl border border-border bg-background shadow-xs lg:col-span-2">
             {SERVICES.map((service) => (
               <li key={service.title} className="group flex flex-1">

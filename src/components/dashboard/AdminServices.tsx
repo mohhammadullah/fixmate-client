@@ -9,10 +9,8 @@ import {
   type ServiceCategory,
 } from "@/components/dashboard/MyBookings";
 
-/* ================================================================== */
-/*  Admin service moderation — GET /api/admin/services (admin only)     */
-/*  plus PATCH /api/services/:id/approve | /reject.                      */
-/* ================================================================== */
+/** Admin service moderation — GET /api/admin/services (admin only),
+ *  plus PATCH /api/services/:id/approve | /reject. */
 
 type ApprovalStatus = "pending" | "approved" | "rejected";
 type StatusFilter = ApprovalStatus | "all";
@@ -197,9 +195,6 @@ async function moderateService(serviceId: string, decision: "approve" | "reject"
   return isRecord(body) && typeof body.message === "string" ? body.message : "Service reviewed.";
 }
 
-/* ================================================================== */
-/*  Reject dialog                                                      */
-/* ================================================================== */
 
 function RejectDialog({
   service,
@@ -329,9 +324,6 @@ function RejectDialog({
   );
 }
 
-/* ================================================================== */
-/*  UI pieces                                                          */
-/* ================================================================== */
 
 function Skeleton() {
   return (
@@ -432,9 +424,6 @@ function ServiceCard({
   );
 }
 
-/* ================================================================== */
-/*  Main component                                                     */
-/* ================================================================== */
 
 export default function AdminServices() {
   const { data: session, isPending } = authClient.useSession();

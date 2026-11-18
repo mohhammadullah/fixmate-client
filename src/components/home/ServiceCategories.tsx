@@ -82,7 +82,6 @@ export default function ServiceCategories() {
   return (
     <section aria-labelledby="categories-heading" className="relative">
       <div className="container-page py-14 lg:py-20">
-        {/* Heading */}
         <div className="mx-auto max-w-2xl text-center">
           <h2
             id="categories-heading"
@@ -121,7 +120,6 @@ export default function ServiceCategories() {
                   </svg>
                 </span>
 
-                {/* Copy */}
                 <h3 className="mt-5 text-lg font-bold tracking-tight text-heading">
                   {category.name}
                 </h3>

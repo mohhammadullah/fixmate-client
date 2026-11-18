@@ -21,7 +21,6 @@ export default async function ServiceDetailsPage({
 
   return (
     <main>
-      {/* ============ Slim cinematic header band ============ */}
       <section className="relative overflow-hidden border-b border-border bg-navy-950 text-[#dbe4ef]">
         <div
           aria-hidden="true"
@@ -53,7 +52,6 @@ export default async function ServiceDetailsPage({
         </div>
       </section>
 
-      {/* ============ Details + booking ============ */}
       <section className="container-page py-8 lg:py-12">
         <ServiceDetails serviceId={id} />
       </section>

@@ -65,7 +65,6 @@ export default function HowItWorks() {
       className="relative scroll-mt-20 border-t border-border"
     >
       <div className="container-page py-14 lg:py-20">
-        {/* Heading */}
         <div className="mx-auto max-w-2xl text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-accent-100 bg-accent-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-accent-strong dark:border-border dark:bg-surface-muted dark:text-accent">
             Simple Process
@@ -121,7 +120,6 @@ export default function HowItWorks() {
                     </svg>
                   </span>
 
-                  {/* Copy */}
                   <span className="min-w-0 lg:mt-5 lg:block">
                     <span className="block text-[11px] font-semibold uppercase tracking-widest text-accent-strong dark:text-accent">
                       Step {index + 1}

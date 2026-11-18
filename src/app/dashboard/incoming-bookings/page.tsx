@@ -18,7 +18,6 @@ export const instant = false;
 export default function IncomingBookingsPage() {
   return (
     <>
-      {/* ============ Slim cinematic header band ============ */}
       <section className="relative overflow-hidden border-b border-border bg-navy-950 text-[#dbe4ef]">
         <div
           aria-hidden="true"
@@ -50,7 +49,6 @@ export default function IncomingBookingsPage() {
         </div>
       </section>
 
-      {/* ============ Booking list ============ */}
       <section aria-label="Incoming bookings" className="px-4 py-6 sm:px-8 sm:py-8">
         <TechnicianBookingsScreen />
       </section>

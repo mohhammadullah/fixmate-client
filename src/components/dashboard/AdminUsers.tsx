@@ -6,9 +6,7 @@ import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
 
-/* ================================================================== */
-/*  Admin user management — safe user DTOs from GET /api/admin/users     */
-/* ================================================================== */
+/** Admin user management — safe user DTOs from GET /api/admin/users. */
 
 type RoleFilter = "all" | "customer" | "technician" | "admin";
 type Role = "customer" | "technician" | "admin";
@@ -294,9 +292,6 @@ async function transferMainAdmin(targetUserId: string, password: string): Promis
   return serverMessage ?? "Main Admin ownership transferred.";
 }
 
-/* ================================================================== */
-/*  Transfer Main Admin dialog                                          */
-/* ================================================================== */
 
 function TransferMainAdminDialog({
   selfId,
@@ -444,9 +439,6 @@ function TransferMainAdminDialog({
   );
 }
 
-/* ================================================================== */
-/*  Role change dialog                                                 */
-/* ================================================================== */
 
 function RoleChangeDialog({
   user,
@@ -572,9 +564,6 @@ function RoleChangeDialog({
   );
 }
 
-/* ================================================================== */
-/*  Main component                                                     */
-/* ================================================================== */
 
 export default function AdminUsers() {
   const { data: session, isPending } = authClient.useSession();

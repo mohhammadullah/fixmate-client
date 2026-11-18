@@ -5,9 +5,7 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
 
-/* ================================================================== */
-/*  Admin review of technician applications stored on user documents.   */
-/* ================================================================== */
+/** Admin review of technician applications stored on user documents. */
 
 type StatusFilter = "all" | "pending" | "approved" | "rejected";
 
@@ -55,9 +53,6 @@ class AdminApplicationsError extends Error {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PAGE_SIZE = 10;
 
-/* ================================================================== */
-/*  Runtime validation                                                 */
-/* ================================================================== */
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -126,10 +121,6 @@ function parseResponse(body: unknown): ApplicationsData {
   if (!Array.isArray(body.data)) throw new AdminApplicationsError("parse", "The server returned an unexpected applications payload.");
   return { items: body.data.map(parseApplication), pagination: parsePagination(body.pagination) };
 }
-
-/* ================================================================== */
-/*  API calls — JWT per request, never stored/logged.                   */
-/* ================================================================== */
 
 async function fetchAccessToken(): Promise<string> {
   let response: { data: unknown; error: null | ({ status: number } & Record<string, unknown>) };
@@ -216,9 +207,6 @@ async function reviewApplication(userId: string, decision: "approve" | "reject",
   return isRecord(body) && typeof body.message === "string" ? body.message : "Application reviewed.";
 }
 
-/* ================================================================== */
-/*  Reject dialog                                                      */
-/* ================================================================== */
 
 function RejectDialog({
   applicant,
@@ -347,9 +335,6 @@ function RejectDialog({
   );
 }
 
-/* ================================================================== */
-/*  UI                                                                 */
-/* ================================================================== */
 
 function Skeleton() {
   return (
@@ -448,9 +433,6 @@ function ApplicationCard({
   );
 }
 
-/* ================================================================== */
-/*  Main component                                                     */
-/* ================================================================== */
 
 export default function AdminTechnicianApplications() {
   const { data: session, isPending } = authClient.useSession();

@@ -21,7 +21,6 @@ export const instant = false;
 export default function AddServicePage() {
   return (
     <>
-      {/* ============ Slim cinematic header band ============ */}
       <section className="relative overflow-hidden border-b border-border bg-navy-950 text-[#dbe4ef]">
         <div
           aria-hidden="true"
@@ -53,7 +52,6 @@ export default function AddServicePage() {
         </div>
       </section>
 
-      {/* ============ Add service form ============ */}
       <section aria-label="Add a new service" className="px-4 py-6 sm:px-8 sm:py-8">
         <AddServiceScreen />
       </section>

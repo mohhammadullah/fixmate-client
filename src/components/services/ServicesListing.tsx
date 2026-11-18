@@ -3,13 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-/* ================================================================== */
-/*  Types — mirror the public GET /api/services contract exactly.       */
-/*                                                                     */
-/*  Public endpoint: no authentication, no JWT, no ownership data sent. */
-/*  Backend returns only approved + available services, projecting out  */
-/*  technicianId, technicianEmail and rejectionReason.                  */
-/* ================================================================== */
+/** Types mirror the public GET /api/services contract (no auth, JWT or
+ *  ownership data): only approved + available services, projecting out
+ *  technicianId, technicianEmail, rejectionReason. */
 
 const CATEGORIES = [
   "Mobile Repair",
@@ -71,10 +67,6 @@ class ServicesError extends Error {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PAGE_SIZE = 12;
 const SEARCH_DEBOUNCE_MS = 350;
-
-/* ================================================================== */
-/*  Runtime response validation — fail loudly on contract drift.        */
-/* ================================================================== */
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -169,9 +161,7 @@ function parseServicesResponse(body: unknown): ServicesPageData {
   };
 }
 
-/* ================================================================== */
-/*  API call — public endpoint, never sends credentials or a JWT.        */
-/* ================================================================== */
+/** Public endpoint — never sends credentials or a JWT. */
 
 interface FetchOptions {
   page: number;
@@ -229,9 +219,6 @@ async function fetchServices(options: FetchOptions): Promise<ServicesPageData> {
   return parseServicesResponse(body);
 }
 
-/* ================================================================== */
-/*  Helpers                                                            */
-/* ================================================================== */
 
 function getPriceError(minPrice: string, maxPrice: string): string | null {
   for (const [label, value] of [
@@ -258,9 +245,6 @@ function formatAmount(value: number): string {
   return new Intl.NumberFormat("en", { maximumFractionDigits: 2 }).format(value);
 }
 
-/* ================================================================== */
-/*  Small building blocks                                              */
-/* ================================================================== */
 
 const fieldClass =
   "h-12 w-full rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted transition-colors duration-200 hover:border-accent-500 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/25";
@@ -488,9 +472,6 @@ function ServiceCard({ service }: { service: PublicService }) {
   );
 }
 
-/* ================================================================== */
-/*  Main component                                                     */
-/* ================================================================== */
 
 export interface ServicesListingProps {
   initialSearch?: string;
@@ -616,7 +597,6 @@ export default function ServicesListing({
 
   return (
     <div className="mx-auto mt-8 max-w-6xl lg:mt-10">
-      {/* ------------------------------------------------ Search & filters */}
       <form
         role="search"
         aria-label="Filter repair services"
@@ -825,7 +805,6 @@ export default function ServicesListing({
         )}
       </form>
 
-      {/* -------------------------------------------------------- Results */}
       <div className="mt-10 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <h2 className="text-xl font-extrabold tracking-tight text-heading sm:text-2xl">
           Available Repair Services

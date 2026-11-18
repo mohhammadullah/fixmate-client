@@ -24,7 +24,6 @@ export default async function PaymentCancelPage({
 
   return (
     <>
-      {/* ============ Slim cinematic header band ============ */}
       <section className="relative overflow-hidden border-b border-border bg-navy-950 text-[#dbe4ef]">
         <div
           aria-hidden="true"
@@ -55,7 +54,6 @@ export default async function PaymentCancelPage({
         </div>
       </section>
 
-      {/* ============ Cancellation panel ============ */}
       <section aria-label="Checkout cancelled" className="px-4 py-6 sm:px-8 sm:py-8">
         <div className="max-w-2xl rounded-2xl border border-border bg-surface p-6 shadow-xs sm:p-8">
           <div

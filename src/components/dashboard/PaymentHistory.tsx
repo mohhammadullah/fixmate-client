@@ -4,15 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 
-/* ================================================================== */
-/*  Types — mirror the backend contract exactly.                        */
-/*                                                                      */
-/*  GET /api/payments/my (verifyToken + verifyCustomer) returns        */
-/*  { success, data, pagination }. Mongo dates serialize as strings;   */
-/*  `amount` is in major currency units, `currency` is lowercase ISO   */
-/*  4217. Stripe internals (session ids, checkout URLs) are never      */
-/*  returned by the API.                                               */
-/* ================================================================== */
+/** Types — mirror the backend contract exactly.
+ *  GET /api/payments/my (verifyToken + verifyCustomer) returns
+ *  { success, data, pagination }. Mongo dates serialize as strings;
+ *  `amount` is in major currency units, `currency` is lowercase ISO 4217.
+ *  Stripe internals (session ids, checkout URLs) are never returned by the API. */
 
 export const PAYMENT_RECORD_STATUSES = [
   "pending",
@@ -60,10 +56,6 @@ class PaymentsError extends Error {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PAGE_SIZE = 10;
-
-/* ================================================================== */
-/*  Runtime response validation — fail loudly on contract drift.       */
-/* ================================================================== */
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -160,11 +152,6 @@ function parsePaymentsResponse(body: unknown): PaymentsPageData {
   };
 }
 
-/* ================================================================== */
-/*  API calls — JWT is retrieved dynamically per request cycle.        */
-/*  It is never stored, logged or persisted anywhere.                  */
-/* ================================================================== */
-
 /** Retrieve a short-lived JWT from the Better Auth server (`/api/auth/token`,
  *  session-cookie gated). Returns the token string only. */
 async function fetchAccessToken(): Promise<string> {
@@ -260,9 +247,6 @@ async function fetchMyPayments(options: {
   return parsePaymentsResponse(body);
 }
 
-/* ================================================================== */
-/*  Display helpers                                                    */
-/* ================================================================== */
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",
@@ -318,9 +302,6 @@ function Badge({ label, className }: { label: string; className: string }) {
   );
 }
 
-/* ================================================================== */
-/*  Skeleton / error / empty states                                    */
-/* ================================================================== */
 
 function PaymentsSkeleton() {
   return (
@@ -437,9 +418,6 @@ function EmptyState() {
   );
 }
 
-/* ================================================================== */
-/*  Payment row                                                        */
-/* ================================================================== */
 
 function PaymentRow({ payment }: { payment: CustomerPayment }) {
   const isSucceeded = payment.status === "succeeded";
@@ -507,9 +485,6 @@ function PaymentRow({ payment }: { payment: CustomerPayment }) {
   );
 }
 
-/* ================================================================== */
-/*  Main component                                                     */
-/* ================================================================== */
 
 export default function PaymentHistory() {
   const [page, setPage] = useState(1);
@@ -572,7 +547,6 @@ export default function PaymentHistory() {
 
   return (
     <div>
-      {/* ---------- Toolbar ---------- */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-accent-strong dark:text-accent">
@@ -611,7 +585,6 @@ export default function PaymentHistory() {
         </div>
       </div>
 
-      {/* ---------- Content ---------- */}
       <div className="mt-6" aria-busy={isLoading}>
         {state.phase === "loading" && <PaymentsSkeleton />}
 
@@ -629,7 +602,6 @@ export default function PaymentHistory() {
               ))}
             </ul>
 
-            {/* ---------- Pagination ---------- */}
             <nav
               aria-label="Payments pagination"
               className="mt-6 flex items-center justify-between gap-3 border-t border-border pt-5"

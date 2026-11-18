@@ -5,9 +5,7 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
 
-/* ================================================================== */
-/*  Admin dashboard statistics — GET /api/admin/dashboard/stats         */
-/* ================================================================== */
+/** Admin dashboard statistics — GET /api/admin/dashboard/stats. */
 
 interface AdminStats {
   totalUsers: number;

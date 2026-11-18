@@ -10,14 +10,10 @@ import {
   type ServiceCategory,
 } from "@/components/dashboard/MyBookings";
 
-/* ================================================================== */
-/*  Types — mirror the backend My Services DTO exactly.                */
-/*                                                                     */
-/*  GET /api/services/my (verifyToken + verifyTechnician) returns      */
-/*  { success, data, pagination }. Mongo documents serialize _id and    */
-/*  dates as strings. Internal fields (technicianId, availabilityStatus,*/
-/*  rejectionReason, …) are deliberately excluded by the backend.       */
-/* ================================================================== */
+/* Types mirror the backend GET /api/services/my DTO:
+ * { success, data, pagination }; dates serialize as strings. Internal
+ * fields (technicianId, availabilityStatus, rejectionReason, ...) are
+ * deliberately excluded by the backend. */
 
 export const SERVICE_APPROVAL_STATUSES = ["pending", "approved", "rejected"] as const;
 export type ServiceApprovalStatus = (typeof SERVICE_APPROVAL_STATUSES)[number];
@@ -69,10 +65,6 @@ const PAGE_SIZE = 9;
 
 type ApprovalStatusFilter = ServiceApprovalStatus | "all";
 type AvailabilityFilter = "all" | "available" | "unavailable";
-
-/* ================================================================== */
-/*  Runtime response validation — fail loudly on contract drift.       */
-/* ================================================================== */
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -175,12 +167,6 @@ function parseServicesResponse(body: unknown): ServicesPageData {
     pagination: parsePagination(body.pagination),
   };
 }
-
-/* ================================================================== */
-/*  API calls — JWT is retrieved dynamically per request cycle.        */
-/*  It is never stored, logged or persisted anywhere. Identity comes   */
-/*  exclusively from the verified JWT; no technicianId is ever sent.   */
-/* ================================================================== */
 
 /** Retrieve a short-lived JWT from the Better Auth server (`/api/auth/token`,
  *  session-cookie gated). Returns the token string only. */
@@ -395,9 +381,6 @@ function applyDeletion(
   };
 }
 
-/* ================================================================== */
-/*  Display helpers                                                    */
-/* ================================================================== */
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",
@@ -449,11 +432,6 @@ function Badge({ label, className }: { label: string; className: string }) {
   );
 }
 
-/* ================================================================== */
-/*  Delete confirmation dialog — custom, accessible, no native         */
-/*  confirm()/alert(). Escape/backdrop dismiss (blocked while pending), */
-/*  focus trapped while open and restored to the trigger on close.     */
-/* ================================================================== */
 
 function DeleteServiceDialog({
   service,
@@ -669,9 +647,6 @@ function DeleteServiceDialog({
   );
 }
 
-/* ================================================================== */
-/*  Add New Service CTA — links to the technician creation page.       */
-/* ================================================================== */
 
 function AddNewServiceButton({ className = "" }: { className?: string }) {
   return (
@@ -697,9 +672,6 @@ function AddNewServiceButton({ className = "" }: { className?: string }) {
   );
 }
 
-/* ================================================================== */
-/*  Small building blocks                                              */
-/* ================================================================== */
 
 function ServicesSkeleton() {
   return (
@@ -1028,11 +1000,6 @@ function ServiceCard({
   );
 }
 
-/* ================================================================== */
-/*  Technician-only screen — session gate + the services view.         */
-/*  The route page is a Server Component so the route can opt out of   */
-/*  instant-navigation validation (`instant = false`).                  */
-/* ================================================================== */
 
 function ScreenSkeleton() {
   return (
@@ -1122,9 +1089,6 @@ export function MyServicesScreen() {
   return <MyServices />;
 }
 
-/* ================================================================== */
-/*  Main component                                                     */
-/* ================================================================== */
 
 export default function MyServices() {
   const [page, setPage] = useState(1);
@@ -1327,7 +1291,6 @@ export default function MyServices() {
 
   return (
     <div>
-      {/* ---------- Filter + result bar ---------- */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div className="grid w-full gap-3 sm:grid-cols-2 lg:max-w-2xl">
           <div>
@@ -1410,7 +1373,6 @@ export default function MyServices() {
         </div>
       </div>
 
-      {/* ---------- Inline notices (success / deletion errors) ---------- */}
       {notice && (
         <div
           role={notice.kind === "success" ? "status" : "alert"}
@@ -1478,7 +1440,6 @@ export default function MyServices() {
         </div>
       )}
 
-      {/* ---------- Content ---------- */}
       <div className="mt-6" aria-busy={isLoading}>
         {state.phase === "loading" && <ServicesSkeleton />}
 
@@ -1498,7 +1459,6 @@ export default function MyServices() {
               ))}
             </ul>
 
-            {/* ---------- Pagination ---------- */}
             <nav
               aria-label="Services pagination"
               className="mt-6 flex items-center justify-between gap-3 border-t border-border pt-5"
@@ -1558,7 +1518,6 @@ export default function MyServices() {
         )}
       </div>
 
-      {/* ---------- Delete confirmation dialog ---------- */}
       {deleteTarget && (
         <DeleteServiceDialog
           service={deleteTarget}

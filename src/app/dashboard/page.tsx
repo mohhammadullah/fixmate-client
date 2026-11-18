@@ -73,7 +73,6 @@ export default function DashboardPage() {
 
   return (
     <>
-      {/* ============ Welcome hero — cinematic navy band ============ */}
       <section className="relative overflow-hidden border-b border-border bg-navy-950 text-[#dbe4ef]">
         <div
           aria-hidden="true"
@@ -116,7 +115,6 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* ============ Available navigation ============ */}
       <section aria-labelledby="dashboard-nav-heading" className="px-4 pt-8 sm:px-8 sm:pt-10">
         <div className="flex items-end justify-between gap-4">
           <div>
@@ -168,7 +166,6 @@ export default function DashboardPage() {
         </ul>
       </section>
 
-      {/* ============ Honest empty state ============ */}
       <section
         aria-labelledby="dashboard-empty-heading"
         className="px-4 py-8 sm:px-8 sm:py-10"

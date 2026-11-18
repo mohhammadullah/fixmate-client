@@ -13,12 +13,10 @@ import {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
-/* ================================================================== */
-/*  Types — mirror the backend updateServiceSchema (all fields optional). */
-/*  PATCH /api/services/:id accepts only client-editable fields; the      */
-/*  server derives technicianId from the JWT and resets approvalStatus    */
-/*  to "pending". No ownership/system field is ever sent from the client. */
-/* ================================================================== */
+/** Types mirror the backend updateServiceSchema (all fields optional).
+ *  PATCH /api/services/:id accepts only client-editable fields; the server
+ *  derives technicianId from the JWT and resets approvalStatus to "pending".
+ *  No ownership/system field is ever sent from the client. */
 
 interface EditFormValues {
   title?: string;
@@ -75,9 +73,6 @@ class EditServiceError extends Error {
   }
 }
 
-/* ================================================================== */
-/*  Helpers                                                             */
-/* ================================================================== */
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -188,11 +183,6 @@ function validateAmenity(candidate: string, existing: string[]): string | null {
   if (existing.length >= 30) return "Amenities can contain at most 30 entries.";
   return null;
 }
-
-/* ================================================================== */
-/*  API calls — JWT is retrieved dynamically per request cycle; never    */
-/*  stored, logged, hardcoded or persisted.                              */
-/* ================================================================== */
 
 async function fetchAccessToken(): Promise<string> {
   let response: {
@@ -327,9 +317,6 @@ async function patchService(id: string, payload: Record<string, unknown>): Promi
   return message ?? "Service updated successfully.";
 }
 
-/* ================================================================== */
-/*  UI building blocks                                                  */
-/* ================================================================== */
 
 const inputBase =
   "w-full rounded-lg border border-border-strong bg-surface px-4 py-2.5 text-sm text-foreground shadow-xs outline-none transition-colors duration-200 placeholder:text-muted hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25 aria-[invalid=true]:border-error/60";
@@ -408,9 +395,6 @@ function ErrorPanel({ title, message }: { title: string; message: string }) {
   );
 }
 
-/* ================================================================== */
-/*  Pre-filled edit form                                                */
-/* ================================================================== */
 
 function EditServiceForm({ serviceId, service }: { serviceId: string; service: ServiceData }) {
   const router = useRouter();
@@ -736,10 +720,6 @@ function EditServiceForm({ serviceId, service }: { serviceId: string; service: S
   );
 }
 
-/* ================================================================== */
-/*  Default export — technician gate + service lookup (client)          */
-/*  `serviceId` comes from the route page unwrapping the params promise. */
-/* ================================================================== */
 
 export default function EditService({ serviceId }: { serviceId: string }) {
   const { data: session, isPending } = authClient.useSession();

@@ -5,9 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
-/* ------------------------------------------------------------------ */
-/*  Validation helpers                                                  */
-/* ------------------------------------------------------------------ */
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const NAME_PATTERN = /^[\p{L}][\p{L}\s.'-]*$/u;
@@ -124,9 +121,6 @@ function mapSignUpError(error: {
   return "Something went wrong while creating your account. Please try again.";
 }
 
-/* ------------------------------------------------------------------ */
-/*  Small inline icons                                                  */
-/* ------------------------------------------------------------------ */
 
 function Icon({
   children,
@@ -153,9 +147,6 @@ function Icon({
 
 const iconProps = { className: "h-5 w-5" } as const;
 
-/* ------------------------------------------------------------------ */
-/*  Registration-themed SVG illustration                                */
-/* ------------------------------------------------------------------ */
 
 function RegistrationIllustration() {
   return (
@@ -309,9 +300,6 @@ const PANEL_STEPS = [
   { step: "03", title: "Track to fixed", detail: "Follow the job from booking to signed off." },
 ] as const;
 
-/* ------------------------------------------------------------------ */
-/*  Sign Up form (client)                                               */
-/* ------------------------------------------------------------------ */
 
 export default function SignUpForm() {
   const router = useRouter();
@@ -479,7 +467,6 @@ export default function SignUpForm() {
       />
 
       <div className="grid min-h-[calc(100svh-4rem)] lg:grid-cols-[1.05fr_1fr]">
-        {/* ============ Left: cinematic visual panel (desktop) ============ */}
         <aside className="relative hidden overflow-hidden bg-navy-950 text-[#dbe4ef] lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-14">
           {/* Backdrop: grid + glows */}
           <div
@@ -500,7 +487,6 @@ export default function SignUpForm() {
             className="pointer-events-none absolute -bottom-24 right-[-10%] h-80 w-80 rounded-full bg-accent-400/15 blur-3xl"
           />
 
-          {/* Brand row */}
           <div className="relative">
             <BrandMark />
           </div>
@@ -544,7 +530,6 @@ export default function SignUpForm() {
           </ol>
         </aside>
 
-        {/* ============ Mobile / tablet: compact cinematic banner ============ */}
         <div className="relative overflow-hidden bg-navy-950 px-6 py-6 sm:px-10 lg:hidden">
           <div
             aria-hidden="true"
@@ -578,10 +563,8 @@ export default function SignUpForm() {
           </div>
         </div>
 
-        {/* ============ Right: form column ============ */}
         <div className="relative flex items-center justify-center px-4 py-10 sm:px-8 sm:py-14 lg:px-10">
           <div className="w-full max-w-md">
-            {/* Back to homepage */}
             <Link
               href="/"
               className="inline-flex items-center gap-2 rounded-full text-xs font-medium text-muted transition-colors duration-200 hover:text-heading"
@@ -592,9 +575,7 @@ export default function SignUpForm() {
               Back to homepage
             </Link>
 
-            {/* Card */}
             <div className="mt-4 rounded-2xl border border-border bg-surface p-6 shadow-lg sm:p-8">
-              {/* Heading */}
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-strong dark:text-accent">
                 Join FixMate
               </p>
@@ -635,7 +616,6 @@ export default function SignUpForm() {
               )}
 
               <form onSubmit={handleSubmit} noValidate aria-busy={isSubmitting} className="mt-6 space-y-4">
-                {/* -------- Full name -------- */}
                 <div>
                   <label htmlFor="name" className="text-sm font-semibold text-heading">
                     Full name
@@ -672,7 +652,6 @@ export default function SignUpForm() {
                   )}
                 </div>
 
-                {/* -------- Email -------- */}
                 <div>
                   <label htmlFor="email" className="text-sm font-semibold text-heading">
                     Email address
@@ -710,9 +689,7 @@ export default function SignUpForm() {
                   )}
                 </div>
 
-                {/* -------- Phone + Area (side by side on sm+) -------- */}
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {/* Phone */}
                   <div>
                     <label htmlFor="phone" className="text-sm font-semibold text-heading">
                       Phone number
@@ -749,7 +726,6 @@ export default function SignUpForm() {
                     )}
                   </div>
 
-                  {/* Area / location */}
                   <div>
                     <label htmlFor="area" className="text-sm font-semibold text-heading">
                       Area / location
@@ -787,9 +763,7 @@ export default function SignUpForm() {
                   </div>
                 </div>
 
-                {/* -------- Password + Confirm (side by side on sm+) -------- */}
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {/* Password */}
                   <div>
                     <label htmlFor="password" className="text-sm font-semibold text-heading">
                       Password
@@ -850,7 +824,6 @@ export default function SignUpForm() {
                     )}
                   </div>
 
-                  {/* Confirm password */}
                   <div>
                     <label htmlFor="confirm-password" className="text-sm font-semibold text-heading">
                       Confirm password
@@ -908,7 +881,6 @@ export default function SignUpForm() {
                   </div>
                 </div>
 
-                {/* -------- Submit -------- */}
                 <button
                   type="submit"
                   disabled={isSubmitting}
@@ -939,7 +911,6 @@ export default function SignUpForm() {
                 </p>
               </form>
 
-              {/* Divider + sign-in link */}
               <div className="mt-5 flex items-center gap-3" aria-hidden="true">
                 <span className="h-px flex-1 bg-border" />
                 <span className="text-[11px] font-medium uppercase tracking-wider text-muted">Have an account?</span>
@@ -956,7 +927,6 @@ export default function SignUpForm() {
               </p>
             </div>
 
-            {/* Reassurance row */}
             <p className="mt-5 flex items-center justify-center gap-2 text-center text-[11px] leading-snug text-muted">
               <Icon className="h-3.5 w-3.5 shrink-0">
                 <rect x="3" y="11" width="18" height="11" rx="2" />

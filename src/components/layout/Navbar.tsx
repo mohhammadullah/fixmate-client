@@ -105,7 +105,6 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-border bg-surface/80 backdrop-blur-xl">
       <div className="container-page">
         <div className="flex h-16 items-center justify-between gap-4">
-          {/* Brand */}
           <Link
             href="/"
             aria-label="FixMate — home"

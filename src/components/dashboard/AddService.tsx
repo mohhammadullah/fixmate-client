@@ -11,21 +11,19 @@ import {
   type ServiceCategory,
 } from "@/components/dashboard/MyBookings";
 
-/* ================================================================== */
-/*  Types — mirror the backend createServiceSchema exactly.             */
-/*                                                                     */
-/*  POST /api/services (verifyToken -> verifyTechnician) accepts ONLY:  */
-/*  title, category, description, overview, hourlyRate, securityDeposit,*/
-/*  maxCapacity, location, image, amenities (optional, default []).    */
-/*  z.strictObject({}) on the server rejects anything else — notably   */
-/*  technicianId/technicianName/approvalStatus, which the server       */
-/*  derives from the verified JWT instead.                              */
-/*                                                                     */
-/*  Success: 201 { success, message, data } with approvalStatus        */
-/*  "pending" and availabilityStatus "available" (server-controlled).   */
-/*  Failures: 400 { success:false, message, errors:[{field,message}] } */
-/*  401 (session), 403 ("Technician access only.").                     */
-/* ================================================================== */
+/** Types — mirror the backend createServiceSchema exactly.
+ *
+ *  POST /api/services (verifyToken -> verifyTechnician) accepts ONLY:
+ *  title, category, description, overview, hourlyRate, securityDeposit,
+ *  maxCapacity, location, image, amenities (optional, default []).
+ *  z.strictObject on the server rejects anything else — notably
+ *  technicianId/technicianName/approvalStatus, which the server derives
+ *  from the verified JWT instead.
+ *
+ *  Success: 201 { success, message, data } with approvalStatus "pending"
+ *  and availabilityStatus "available" (server-controlled).
+ *  Failures: 400 { success:false, message, errors:[{field,message}] };
+ *  401 (session), 403 ("Technician access only."). */
 
 export interface CreateServiceInput {
   title: string;
@@ -54,7 +52,6 @@ interface FieldIssue {
 
 class AddServiceError extends Error {
   readonly kind: AddServiceErrorKind;
-  /** Field-keyed issues returned by the backend (400), if any. */
   readonly issues: FieldIssue[];
   constructor(kind: AddServiceErrorKind, message: string, issues: FieldIssue[] = []) {
     super(message);
@@ -66,11 +63,7 @@ class AddServiceError extends Error {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
-/* ================================================================== */
-/*  API calls — JWT is retrieved dynamically per request cycle.        */
-/*  It is never stored, logged or persisted anywhere. Identity comes   */
-/*  exclusively from the verified JWT; no technicianId is ever sent.   */
-/* ================================================================== */
+// API calls — JWT fetched per request; never stored or logged. Identity comes from the verified JWT only, never from client input.
 
 /** Retrieve a short-lived JWT from the Better Auth server (`/api/auth/token`,
  *  session-cookie gated). Returns the token string only. */
@@ -137,7 +130,6 @@ function parseFieldIssues(body: unknown): FieldIssue[] {
 async function createService(input: CreateServiceInput): Promise<string> {
   const token = await fetchAccessToken();
 
-  // Send ONLY the fields createServiceSchema accepts.
   const payload: Record<string, unknown> = {
     title: input.title,
     category: input.category,
@@ -223,10 +215,7 @@ async function createService(input: CreateServiceInput): Promise<string> {
   return serverMessage ?? "Service created successfully.";
 }
 
-/* ================================================================== */
-/*  Client-side validation — mirrors createServiceSchema exactly,      */
-/*  plus an http(s)-URL check for the image field (task requirement).  */
-/* ================================================================== */
+/* Client-side validation — mirrors createServiceSchema exactly, plus an http(s)-URL check for the image field. */
 
 export interface FormValues {
   title: string;
@@ -326,9 +315,6 @@ function validateAmenity(candidate: string, existing: string[]): string | null {
   return null;
 }
 
-/* ================================================================== */
-/*  Small building blocks                                              */
-/* ================================================================== */
 
 const inputBase =
   "w-full rounded-lg border border-border-strong bg-surface px-4 py-2.5 text-sm text-foreground shadow-xs outline-none transition-colors duration-200 placeholder:text-muted hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25 aria-[invalid=true]:border-error/60 aria-[invalid=true]:bg-error-soft/20";
@@ -441,11 +427,6 @@ function AccessDenied({ role }: { role: "customer" | "admin" | null }) {
   );
 }
 
-/* ================================================================== */
-/*  Technician-only screen — session gate + the form.                  */
-/*  The route page is a Server Component so the route can opt out of   */
-/*  instant-navigation validation (`instant = false`).                  */
-/* ================================================================== */
 
 export function AddServiceScreen() {
   // Session atom is already resolved by the layout — this resolves instantly.
@@ -467,9 +448,6 @@ export function AddServiceScreen() {
   return <AddServiceForm />;
 }
 
-/* ================================================================== */
-/*  Back to My Services link                                           */
-/* ================================================================== */
 
 function BackToServicesLink({ className = "" }: { className?: string }) {
   return (
@@ -494,9 +472,6 @@ function BackToServicesLink({ className = "" }: { className?: string }) {
   );
 }
 
-/* ================================================================== */
-/*  The form                                                           */
-/* ================================================================== */
 
 const EMPTY_VALUES: FormValues = {
   title: "",
@@ -786,7 +761,6 @@ export default function AddServiceForm() {
         </p>
       </div>
 
-      {/* Form-level error summary */}
       {formError && (
         <div
           role="alert"
@@ -809,7 +783,6 @@ export default function AddServiceForm() {
         </div>
       )}
 
-      {/* ---------- Section: Service basics ---------- */}
       <fieldset className="rounded-2xl border border-border bg-surface p-5 shadow-xs sm:p-6">
         <legend className="px-1 text-sm font-bold uppercase tracking-[0.14em] text-muted">
           Service basics
@@ -915,7 +888,6 @@ export default function AddServiceForm() {
         </div>
       </fieldset>
 
-      {/* ---------- Section: Pricing & capacity ---------- */}
       <fieldset className="rounded-2xl border border-border bg-surface p-5 shadow-xs sm:p-6">
         <legend className="px-1 text-sm font-bold uppercase tracking-[0.14em] text-muted">
           Pricing &amp; capacity
@@ -993,7 +965,6 @@ export default function AddServiceForm() {
         </div>
       </fieldset>
 
-      {/* ---------- Section: Details ---------- */}
       <fieldset className="rounded-2xl border border-border bg-surface p-5 shadow-xs sm:p-6">
         <legend className="px-1 text-sm font-bold uppercase tracking-[0.14em] text-muted">
           Service details
@@ -1116,7 +1087,6 @@ export default function AddServiceForm() {
         </div>
       </fieldset>
 
-      {/* ---------- Actions ---------- */}
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="max-w-sm text-[11px] leading-relaxed text-muted">
           New services start as <span className="font-semibold text-warning">Pending</span> approval and remain available once approved. The FixMate team reviews every new service.

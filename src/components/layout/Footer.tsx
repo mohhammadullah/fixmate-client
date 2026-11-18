@@ -57,7 +57,6 @@ export default async function Footer() {
     <footer className="border-t border-border bg-surface">
       <div className="container-page py-12 lg:py-16">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-8">
-          {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-3">
             <Link
               href="/"

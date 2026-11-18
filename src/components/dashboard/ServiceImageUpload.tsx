@@ -3,10 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 
-/* ================================================================== */
-/*  Reusable service image upload (ImgBB via server proxy).              */
-/*  The JWT is fetched per upload and never stored/logged.                */
-/* ================================================================== */
+/** Reusable service image upload (ImgBB via server proxy). The JWT is fetched per upload and never stored/logged. */
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 const MAX_BYTES = 5 * 1024 * 1024;

@@ -5,18 +5,11 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
 
-/* ================================================================== */
-/*  Types — mirror the backend public service-details DTO exactly.      */
-/*                                                                     */
-/*  GET /api/services/:id is public and returns the safe public        */
-/*  projection of an approved + available service. Private fields       */
-/*  (technicianId, technicianEmail, rejectionReason) are removed by     */
-/*  the server and are never expected here.                              */
-/*                                                                     */
-/*  POST /api/bookings (verifyToken -> verifyCustomer) accepts ONLY      */
-/*  { serviceId, problemDescription } — ownership/status/payment are     */
-/*  server-controlled. JWT is retrieved dynamically per request.        */
-/* ================================================================== */
+/** Types mirror the public service-details DTO.
+ *  GET /api/services/:id returns the safe public projection of an approved
+ *  + available service; private fields are removed by the server.
+ *  POST /api/bookings (verifyToken -> verifyCustomer) accepts ONLY
+ *  { serviceId, problemDescription }; JWT is fetched per request. */
 
 const CATEGORIES = [
   "Mobile Repair",
@@ -83,9 +76,6 @@ class BookingError extends Error {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const OBJECT_ID_HEX = /^[0-9a-fA-F]{24}$/;
 
-/* ================================================================== */
-/*  Runtime response validation                                        */
-/* ================================================================== */
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -137,9 +127,7 @@ function parseServiceDetails(raw: unknown): PublicServiceDetails {
   };
 }
 
-/* ================================================================== */
-/*  API calls — details is public; booking uses a dynamic JWT.          */
-/* ================================================================== */
+// API calls — details is public; booking uses a dynamic JWT.
 
 async function fetchServiceDetails(serviceId: string, signal: AbortSignal): Promise<PublicServiceDetails> {
   if (!OBJECT_ID_HEX.test(serviceId)) {
@@ -304,9 +292,6 @@ async function createBookingRequest(serviceId: string, problemDescription: strin
   return serverMessage ?? "Booking requested successfully.";
 }
 
-/* ================================================================== */
-/*  Helpers                                                            */
-/* ================================================================== */
 
 function formatAmount(value: number): string {
   return new Intl.NumberFormat("en", { maximumFractionDigits: 2 }).format(value);
@@ -319,9 +304,6 @@ function validateProblemDescription(value: string): string | null {
   return null;
 }
 
-/* ================================================================== */
-/*  UI states                                                          */
-/* ================================================================== */
 
 function DetailsSkeleton() {
   return (
@@ -411,9 +393,6 @@ function BackLink() {
   );
 }
 
-/* ================================================================== */
-/*  Booking panel                                                      */
-/* ================================================================== */
 
 function BookingPanel({ service }: { service: PublicServiceDetails }) {
   const { data: session, isPending } = authClient.useSession();
@@ -664,9 +643,6 @@ function BookingPanel({ service }: { service: PublicServiceDetails }) {
   );
 }
 
-/* ================================================================== */
-/*  Main component                                                     */
-/* ================================================================== */
 
 export default function ServiceDetails({ serviceId }: { serviceId: string }) {
   const [reloadToken, setReloadToken] = useState(0);
@@ -734,7 +710,6 @@ function ServiceDetailsContent({ service }: { service: PublicServiceDetails }) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-5">
-      {/* ---------- Main column ---------- */}
       <div className="space-y-6 lg:col-span-3">
         <section
           aria-labelledby="service-details-heading"
@@ -842,7 +817,6 @@ function ServiceDetailsContent({ service }: { service: PublicServiceDetails }) {
         </section>
       </div>
 
-      {/* ---------- Booking + facts aside ---------- */}
       <aside className="space-y-6 lg:col-span-2">
         <BookingPanel service={service} />
 

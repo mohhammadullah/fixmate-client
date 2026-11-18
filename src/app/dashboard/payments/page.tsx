@@ -99,7 +99,6 @@ export default function PaymentHistoryPage() {
 
   return (
     <>
-      {/* ============ Slim cinematic header band ============ */}
       <section className="relative overflow-hidden border-b border-border bg-navy-950 text-[#dbe4ef]">
         <div
           aria-hidden="true"
@@ -131,7 +130,6 @@ export default function PaymentHistoryPage() {
         </div>
       </section>
 
-      {/* ============ Payments list ============ */}
       <section aria-label="Your payments" className="px-4 py-6 sm:px-8 sm:py-8">
         <PaymentHistory />
       </section>

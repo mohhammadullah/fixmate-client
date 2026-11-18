@@ -12,18 +12,7 @@ import {
   type PaymentStatus,
 } from "@/components/dashboard/MyBookings";
 
-/* ================================================================== */
-/*  Technician Incoming Bookings                                       */
-/*                                                                     */
-/*  GET /api/bookings/technician (verifyToken -> verifyTechnician)      */
-/*  returns only bookings whose technicianId matches the verified JWT.  */
-/*  No technicianId is ever sent from the client — identity comes       */
-/*  exclusively from the token. Response: { success, data, pagination }. */
-/*                                                                     */
-/*  Note: the only booking-details endpoint (GET /api/bookings/:id) is  */
-/*  customer-only (verifyCustomer), so no "View Details" action is      */
-/*  offered here — linking to a customer-only page would be wrong.      */
-/* ================================================================== */
+/** Incoming Bookings — GET /api/bookings/technician (verifyToken + verifyTechnician) returns only bookings whose technicianId matches the verified JWT; no technicianId is ever sent. The only booking-details endpoint (GET /api/bookings/:id) is customer-only (verifyCustomer), so no "View Details" action is offered here. */
 
 /** Statuses offered in the filter — cancelled is still valid in the DTO
  *  (and rendered when returned), but is intentionally not a filter option. */
@@ -81,9 +70,6 @@ class TechnicianBookingsError extends Error {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PAGE_SIZE = 10;
 
-/* ================================================================== */
-/*  Runtime response validation                                        */
-/* ================================================================== */
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -194,11 +180,6 @@ function parseBookingsResponse(body: unknown): TechnicianBookingsPageData {
     pagination: parsePagination(body.pagination),
   };
 }
-
-/* ================================================================== */
-/*  API calls — JWT is retrieved dynamically per request cycle and     */
-/*  never stored, logged, hardcoded or persisted.                       */
-/* ================================================================== */
 
 async function fetchAccessToken(): Promise<string> {
   let response: {
@@ -514,9 +495,6 @@ function applyTransition(
   };
 }
 
-/* ================================================================== */
-/*  Display helpers                                                    */
-/* ================================================================== */
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",
@@ -580,9 +558,6 @@ function Badge({ label, className }: { label: string; className: string }) {
   );
 }
 
-/* ================================================================== */
-/*  Building blocks                                                    */
-/* ================================================================== */
 
 function BookingsSkeleton() {
   return (
@@ -714,11 +689,7 @@ function EmptyState({ filtered, onClearFilter }: { filtered: boolean; onClearFil
   );
 }
 
-/* ================================================================== */
-/*  Complete Work dialog — custom, accessible, no native prompts.      */
-/*  Requires a finite positive final repair amount (backend rule).     */
-/* ================================================================== */
-
+/** Complete Work dialog — custom, accessible, no native prompts. Requires a finite positive final repair amount (backend rule). */
 function CompleteWorkDialog({
   booking,
   pending,
@@ -991,12 +962,8 @@ function CompleteWorkDialog({
   );
 }
 
-/* ================================================================== */
-/*  Reject confirmation dialog — custom, accessible, no native         */
-/*  confirm()/alert(). Escape/backdrop dismiss (blocked while pending), */
-/*  focus trapped while open and restored to the trigger on close.     */
-/* ================================================================== */
-
+/** Reject confirmation dialog — custom, accessible, no native confirm()/alert().
+ *  Escape/backdrop dismiss (blocked while pending), focus trapped while open and restored to the trigger on close. */
 function RejectBookingDialog({
   booking,
   pending,
@@ -1527,9 +1494,6 @@ function BookingCard({
   );
 }
 
-/* ================================================================== */
-/*  Technician-only screen                                             */
-/* ================================================================== */
 
 function ScreenSkeleton() {
   return (
@@ -1611,9 +1575,6 @@ export function TechnicianBookingsScreen() {
   return <TechnicianBookings />;
 }
 
-/* ================================================================== */
-/*  Main component                                                     */
-/* ================================================================== */
 
 export default function TechnicianBookings() {
   const [page, setPage] = useState(1);
@@ -1626,7 +1587,6 @@ export default function TechnicianBookings() {
     | { phase: "success"; data: TechnicianBookingsPageData }
   >({ phase: "loading" });
 
-  // Accept/Reject + workflow flow
   const [rejectTarget, setRejectTarget] = useState<TechnicianBooking | null>(null);
   const [rejectError, setRejectError] = useState<string | null>(null);
   const [completeTarget, setCompleteTarget] = useState<TechnicianBooking | null>(null);
@@ -1878,7 +1838,6 @@ export default function TechnicianBookings() {
 
   return (
     <div>
-      {/* ---------- Filter + result bar ---------- */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="w-full sm:max-w-xs">
           <label
@@ -1945,7 +1904,6 @@ export default function TechnicianBookings() {
         </div>
       </div>
 
-      {/* ---------- Inline notices (transition feedback) ---------- */}
       {notice && (
         <div
           role={notice.kind === "success" ? "status" : "alert"}
@@ -2013,7 +1971,6 @@ export default function TechnicianBookings() {
         </div>
       )}
 
-      {/* ---------- Content ---------- */}
       <div className="mt-6" aria-busy={isLoading}>
         {state.phase === "loading" && <BookingsSkeleton />}
 
@@ -2100,7 +2057,6 @@ export default function TechnicianBookings() {
         )}
       </div>
 
-      {/* ---------- Reject confirmation dialog ---------- */}
       {rejectTarget && (
         <RejectBookingDialog
           booking={rejectTarget}
@@ -2111,7 +2067,6 @@ export default function TechnicianBookings() {
         />
       )}
 
-      {/* ---------- Complete Work dialog ---------- */}
       {completeTarget && (
         <CompleteWorkDialog
           booking={completeTarget}

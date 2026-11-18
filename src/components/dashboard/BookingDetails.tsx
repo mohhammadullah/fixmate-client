@@ -14,15 +14,11 @@ import {
   type ServiceCategory,
 } from "@/components/dashboard/MyBookings";
 
-/* ================================================================== */
-/*  Types — mirror the backend Booking Details DTO exactly.             */
-/*                                                                     */
-/*  GET /api/bookings/:id (verifyToken + verifyCustomer, customer's     */
-/*  own booking only) returns { success, data } where `data` is the     */
-/*  safe DTO: no customer identity, no serviceId, no securityDeposit.   */
-/*  Mongo dates serialize as ISO strings; finalAmount is only set once  */
-/*  a job is completed.                                                 */
-/* ================================================================== */
+/** Types — mirror the backend Booking Details DTO exactly.
+ *  GET /api/bookings/:id (verifyToken + verifyCustomer, customer's own booking)
+ *  returns { success, data }; the safe DTO excludes customer identity, serviceId
+ *  and securityDeposit. Mongo dates serialize as ISO strings; finalAmount is only
+ *  set once a job is completed. */
 
 export interface BookingDetails {
   /** Mongo ObjectId hex string — the booking reference. */
@@ -66,10 +62,6 @@ class BookingDetailsError extends Error {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
-
-/* ================================================================== */
-/*  Runtime response validation — fail loudly on contract drift.       */
-/* ================================================================== */
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -194,13 +186,9 @@ function parseDetailsResponse(body: unknown): BookingDetails {
   return parseBookingDetails(body.data);
 }
 
-/* ================================================================== */
-/*  API calls — JWT is retrieved dynamically per request cycle.        */
-/*  It is never stored, logged or persisted anywhere. Identity comes   */
-/*  exclusively from the verified JWT; no client-supplied customer     */
-/*  identity is ever sent.                                             */
-/* ================================================================== */
-
+// API calls — the JWT is fetched per request cycle and never stored, logged
+// or persisted anywhere. Identity comes only from the verified JWT; no
+// client-supplied customer identity is ever sent.
 /** Retrieve a short-lived JWT from the Better Auth server (`/api/auth/token`,
  *  session-cookie gated). Returns the token string only. */
 async function fetchAccessToken(): Promise<string> {
@@ -311,12 +299,8 @@ async function fetchBookingDetails(
   return parseDetailsResponse(body);
 }
 
-/* ================================================================== */
-/*  Stripe Checkout — the browser never sees an amount from here.      */
-/*                                                                      */
-/*  The backend takes the booking's server-side finalAmount and returns */
-/*  a hosted Checkout URL. We only forward the booking reference.       */
-/* ================================================================== */
+/* Stripe Checkout — amount is server-side (from the booking); the browser
+ * only forwards the booking reference. */
 
 async function createCheckoutSession(bookingId: string): Promise<string> {
   const token = await fetchAccessToken();
@@ -386,10 +370,6 @@ async function createCheckoutSession(bookingId: string): Promise<string> {
 
   return url;
 }
-
-/* ================================================================== */
-/*  Display helpers                                                    */
-/* ================================================================== */
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",
@@ -462,10 +442,6 @@ function technicianInitials(name: string): string {
   const last = parts.length > 1 ? (parts[parts.length - 1][0] ?? "") : "";
   return (first + last).toUpperCase();
 }
-
-/* ================================================================== */
-/*  Skeleton / error states                                            */
-/* ================================================================== */
 
 function DetailsSkeleton() {
   return (
@@ -586,10 +562,6 @@ function DetailsErrorPanel({
   );
 }
 
-/* ================================================================== */
-/*  Booking reference with copy-to-clipboard                           */
-/* ================================================================== */
-
 function CopyReferenceButton({ reference }: { reference: string }) {
   const [feedback, setFeedback] = useState<"idle" | "copied" | "failed">("idle");
 
@@ -650,14 +622,6 @@ function CopyReferenceButton({ reference }: { reference: string }) {
     </span>
   );
 }
-
-/* ================================================================== */
-/*  Details view                                                       */
-/* ================================================================== */
-
-/* ================================================================== */
-/*  Pay now — Stripe Checkout redirect                                  */
-/* ================================================================== */
 
 function PayNowSection({
   bookingId,
@@ -816,7 +780,6 @@ function SummaryRow({
 function BookingDetailsView({ booking }: { booking: BookingDetails }) {
   return (
     <div className="grid gap-6 lg:grid-cols-3">
-      {/* ---------- Main column ---------- */}
       <div className="space-y-6 lg:col-span-2">
         {/* Hero card */}
         <section
@@ -950,7 +913,6 @@ function BookingDetailsView({ booking }: { booking: BookingDetails }) {
         </section>
       </div>
 
-      {/* ---------- Summary aside ---------- */}
       <aside
         aria-labelledby="booking-summary-heading"
         className="h-fit rounded-2xl border border-border bg-surface p-5 shadow-xs sm:p-6 lg:sticky lg:top-6"
@@ -1017,15 +979,10 @@ function BookingDetailsView({ booking }: { booking: BookingDetails }) {
   );
 }
 
-/* ================================================================== */
-/*  Customer-only screen — session gate + booking details.             */
-/*                                                                     */
-/*  Lives in this client module because the dashboard layout is client */
-/*  and the role check mirrors /dashboard/bookings exactly. The route  */
-/*  page is a Server Component so the route can opt out of instant-    */
-/*  navigation validation (`instant = false`).                          */
-/* ================================================================== */
-
+/* Customer-only screen — lives in this client module because the dashboard
+ * layout is client and the role check mirrors /dashboard/bookings exactly.
+ * The route page is a Server Component so it can opt out of instant-
+ * navigation validation (`instant = false`). */
 function ScreenSkeleton() {
   return (
     <div role="status" aria-label="Loading booking details…" className="space-y-6">
@@ -1112,10 +1069,6 @@ export function BookingDetailsScreen({ bookingId }: { bookingId: string }) {
 
   return <BookingDetails bookingId={bookingId} />;
 }
-
-/* ================================================================== */
-/*  Main component                                                     */
-/* ================================================================== */
 
 export default function BookingDetails({ bookingId }: { bookingId: string }) {
   const [reloadToken, setReloadToken] = useState(0);

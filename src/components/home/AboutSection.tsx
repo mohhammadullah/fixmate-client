@@ -53,7 +53,6 @@ export default function AboutSection() {
     >
       <div className="container-page py-14 lg:py-20">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          {/* ------------------------------------------------------ Copy */}
           <div className="max-w-xl">
             <span className="inline-flex items-center gap-2 rounded-full border border-accent-100 bg-accent-50 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-strong dark:border-border dark:bg-surface-muted dark:text-accent">
               About FixMate
@@ -131,7 +130,6 @@ export default function AboutSection() {
             </Link>
           </div>
 
-          {/* ------------------------------------------- Illustration art */}
           <div
             aria-hidden="true"
             className="relative mx-auto flex w-full max-w-md items-center justify-center overflow-hidden rounded-3xl border border-navy-700 bg-gradient-to-br from-navy-950 via-navy-900 to-navy-800 p-8 shadow-lg lg:max-w-lg"

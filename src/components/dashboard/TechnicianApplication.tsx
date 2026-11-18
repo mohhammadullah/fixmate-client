@@ -5,11 +5,7 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
 
-/* ================================================================== */
-/*  Technician application — stored as a structured subdocument on the  */
-/*  Better Auth user document. No new collection, no role field in the   */
-/*  request. Role changes only happen through admin review.              */
-/* ================================================================== */
+/** Technician application — a structured subdocument on the Better Auth user document. No role field is ever sent; role changes only happen through admin review. */
 
 type ApplicationStatus = "pending" | "approved" | "rejected" | "none";
 
@@ -39,10 +35,6 @@ class ApplicationError extends Error {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PHONE_PATTERN = /^[0-9+\-()\s]{5,30}$/;
-
-/* ================================================================== */
-/*  Validation (mirrors submitApplicationSchema)                        */
-/* ================================================================== */
 
 interface FormValues {
   phone: string;
@@ -94,10 +86,6 @@ function validateSkill(raw: string, existing: string[]): string | null {
   if (existing.length >= 20) return "Up to 20 skills are allowed.";
   return null;
 }
-
-/* ================================================================== */
-/*  API calls — JWT is retrieved dynamically and never stored/logged.   */
-/* ================================================================== */
 
 async function fetchAccessToken(): Promise<string> {
   let response: {
@@ -214,9 +202,6 @@ async function submitApplication(payload: FormValues & { skills: string[] }): Pr
   return parseApplication(body.data);
 }
 
-/* ================================================================== */
-/*  UI helpers                                                         */
-/* ================================================================== */
 
 const inputBase =
   "w-full rounded-xl border border-border-strong bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted shadow-xs outline-none transition-colors duration-200 hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25 aria-[invalid=true]:border-error/60";
@@ -281,9 +266,6 @@ function AccessDenied({ role }: { role: "technician" | "admin" | null }) {
   );
 }
 
-/* ================================================================== */
-/*  Application form                                                   */
-/* ================================================================== */
 
 function ApplicationForm({
   initial,
@@ -471,9 +453,6 @@ function ApplicationForm({
   );
 }
 
-/* ================================================================== */
-/*  Main component                                                     */
-/* ================================================================== */
 
 export default function TechnicianApplication() {
   const { data: session, isPending } = authClient.useSession();

@@ -5,9 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
-/* ------------------------------------------------------------------ */
-/*  Validation helpers                                                  */
-/* ------------------------------------------------------------------ */
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -62,9 +59,6 @@ function mapSignInError(error: {
   return "Something went wrong while signing you in. Please try again.";
 }
 
-/* ------------------------------------------------------------------ */
-/*  Small inline icons                                                  */
-/* ------------------------------------------------------------------ */
 
 function Icon({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
@@ -85,9 +79,6 @@ function Icon({ children, className }: { children: React.ReactNode; className?: 
 
 const iconProps = { className: "h-5 w-5" } as const;
 
-/* ------------------------------------------------------------------ */
-/*  Cinematic visual panel — custom repair-themed SVG illustration      */
-/* ------------------------------------------------------------------ */
 
 function RepairIllustration() {
   return (
@@ -248,9 +239,6 @@ const PANEL_STEPS = [
   { step: "03", title: "Track your repair", detail: "Follow progress from booking to fixed, in one place." },
 ] as const;
 
-/* ------------------------------------------------------------------ */
-/*  Sign In form (client)                                               */
-/* ------------------------------------------------------------------ */
 
 export default function SignInForm() {
   const router = useRouter();
@@ -331,7 +319,6 @@ export default function SignInForm() {
       />
 
       <div className="grid min-h-[calc(100svh-4rem)] lg:grid-cols-[1.05fr_1fr]">
-        {/* ============ Left: cinematic visual panel (desktop) ============ */}
         <aside className="relative hidden overflow-hidden bg-navy-950 text-[#dbe4ef] lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-14">
           {/* Backdrop: grid + glows */}
           <div
@@ -352,7 +339,6 @@ export default function SignInForm() {
             className="pointer-events-none absolute -bottom-24 right-[-10%] h-80 w-80 rounded-full bg-accent-400/15 blur-3xl"
           />
 
-          {/* Brand row */}
           <div className="relative">
             <BrandMark />
           </div>
@@ -396,7 +382,6 @@ export default function SignInForm() {
           </ol>
         </aside>
 
-        {/* ============ Mobile / tablet: compact cinematic banner ============ */}
         <div className="relative overflow-hidden bg-navy-950 px-6 py-6 sm:px-10 lg:hidden">
           <div
             aria-hidden="true"
@@ -430,10 +415,8 @@ export default function SignInForm() {
           </div>
         </div>
 
-        {/* ============ Right: form column ============ */}
         <div className="relative flex items-center justify-center px-4 py-10 sm:px-8 sm:py-14 lg:px-10">
           <div className="w-full max-w-md">
-            {/* Back to homepage */}
             <Link
               href="/"
               className="inline-flex items-center gap-2 rounded-full text-xs font-medium text-muted transition-colors duration-200 hover:text-heading"
@@ -444,9 +427,7 @@ export default function SignInForm() {
               Back to homepage
             </Link>
 
-            {/* Card */}
             <div className="mt-4 rounded-2xl border border-border bg-surface p-6 shadow-lg sm:p-8">
-              {/* Heading */}
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-strong dark:text-accent">
                 Welcome back
               </p>
@@ -472,7 +453,6 @@ export default function SignInForm() {
               )}
 
               <form onSubmit={handleSubmit} noValidate aria-busy={isSubmitting} className="mt-6 space-y-5">
-                {/* -------- Email -------- */}
                 <div>
                   <label htmlFor="email" className="text-sm font-semibold text-heading">
                     Email address
@@ -515,7 +495,6 @@ export default function SignInForm() {
                   )}
                 </div>
 
-                {/* -------- Password -------- */}
                 <div>
                   <label htmlFor="password" className="text-sm font-semibold text-heading">
                     Password
@@ -581,7 +560,6 @@ export default function SignInForm() {
                   )}
                 </div>
 
-                {/* -------- Submit -------- */}
                 <button
                   type="submit"
                   disabled={isSubmitting}
@@ -607,7 +585,6 @@ export default function SignInForm() {
                 </button>
               </form>
 
-              {/* Divider + sign-up link */}
               <div className="mt-6 flex items-center gap-3" aria-hidden="true">
                 <span className="h-px flex-1 bg-border" />
                 <span className="text-[11px] font-medium uppercase tracking-wider text-muted">New here?</span>
@@ -624,7 +601,6 @@ export default function SignInForm() {
               </p>
             </div>
 
-            {/* Reassurance row */}
             <p className="mt-5 flex items-center justify-center gap-2 text-center text-[11px] leading-snug text-muted">
               <Icon className="h-3.5 w-3.5 shrink-0">
                 <rect x="3" y="11" width="18" height="11" rx="2" />

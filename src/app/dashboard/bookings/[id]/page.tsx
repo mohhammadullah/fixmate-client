@@ -25,7 +25,6 @@ export default async function BookingDetailsPage({
 
   return (
     <>
-      {/* ============ Slim cinematic header band ============ */}
       <section className="relative overflow-hidden border-b border-border bg-navy-950 text-[#dbe4ef]">
         <div
           aria-hidden="true"
@@ -57,7 +56,6 @@ export default async function BookingDetailsPage({
         </div>
       </section>
 
-      {/* ============ Booking details ============ */}
       <section aria-label="Booking details" className="px-4 py-6 sm:px-8 sm:py-8">
         <BookingDetailsScreen bookingId={id} />
       </section>

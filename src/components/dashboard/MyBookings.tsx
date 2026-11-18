@@ -4,13 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 
-/* ================================================================== */
-/*  Types — mirror the backend contract exactly.                       */
-/*                                                                     */
-/*  GET /api/bookings/my (verifyToken + verifyCustomer) returns        */
-/*  { success, data, pagination }. Mongo documents serialize _id and   */
-/*  dates as strings; finalAmount is only set once a job is completed. */
-/* ================================================================== */
+/** Types mirror the backend contract exactly:
+ *  GET /api/bookings/my (verifyToken + verifyCustomer) returns
+ *  { success, data, pagination }; dates serialize as strings; finalAmount is
+ *  only set once a job is completed. */
 
 export const BOOKING_STATUSES = [
   "requested",
@@ -92,10 +89,6 @@ class BookingsError extends Error {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PAGE_SIZE = 12;
-
-/* ================================================================== */
-/*  Runtime response validation — fail loudly on contract drift.       */
-/* ================================================================== */
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -213,11 +206,6 @@ function parseBookingsResponse(body: unknown): BookingsPageData {
     pagination: parsePagination(body.pagination),
   };
 }
-
-/* ================================================================== */
-/*  API calls — JWT is retrieved dynamically per request cycle.        */
-/*  It is never stored, logged or persisted anywhere.                  */
-/* ================================================================== */
 
 /** Retrieve a short-lived JWT from the Better Auth server (`/api/auth/token`,
  *  session-cookie gated). Returns the token string only. */
@@ -445,9 +433,6 @@ function applyCancellation(
   };
 }
 
-/* ================================================================== */
-/*  Display helpers                                                    */
-/* ================================================================== */
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",
@@ -503,9 +488,6 @@ const PAYMENT_STYLES: Record<PaymentStatus, string> = {
   refunded: "border-border-strong bg-surface-muted text-muted",
 };
 
-/* ================================================================== */
-/*  Small building blocks                                              */
-/* ================================================================== */
 
 function Badge({ label, className }: { label: string; className: string }) {
   return (
@@ -824,12 +806,8 @@ function BookingCard({
   );
 }
 
-/* ================================================================== */
-/*  Cancel confirmation dialog — custom, accessible, never native      */
-/*  confirm()/alert(). Focus is trapped while open, Escape dismisses, */
-/*  and focus returns to the triggering button on close.              */
-/* ================================================================== */
-
+/** Cancel confirmation dialog — custom, accessible, never native confirm()/alert().
+ *  Focus is trapped while open, Escape dismisses, and focus returns to the triggering button on close. */
 function CancelBookingDialog({
   booking,
   pending,
@@ -1090,9 +1068,6 @@ function CancelBookingDialog({
   );
 }
 
-/* ================================================================== */
-/*  Main component                                                     */
-/* ================================================================== */
 
 type BookingsNotice =
   | { kind: "success"; message: string }
@@ -1109,7 +1084,6 @@ export default function MyBookings() {
     | { phase: "success"; data: BookingsPageData }
   >({ phase: "loading" });
 
-  // Cancellation flow
   const [cancelTarget, setCancelTarget] = useState<CustomerBooking | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -1275,7 +1249,6 @@ export default function MyBookings() {
 
   return (
     <div>
-      {/* ---------- Filter + result bar ---------- */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="w-full sm:max-w-xs">
           <label
@@ -1342,7 +1315,6 @@ export default function MyBookings() {
         </div>
       </div>
 
-      {/* ---------- Inline notices (success / cancellation errors) ---------- */}
       {notice && (
         <div
           role={notice.kind === "success" ? "status" : "alert"}
@@ -1412,7 +1384,6 @@ export default function MyBookings() {
         </div>
       )}
 
-      {/* ---------- Content ---------- */}
       <div className="mt-6" aria-busy={isLoading}>
         {state.phase === "loading" && <BookingsSkeleton />}
 
@@ -1434,7 +1405,6 @@ export default function MyBookings() {
               ))}
             </ul>
 
-            {/* ---------- Pagination ---------- */}
             <nav
               aria-label="Bookings pagination"
               className="mt-6 flex items-center justify-between gap-3 border-t border-border pt-5"
@@ -1494,7 +1464,6 @@ export default function MyBookings() {
         )}
       </div>
 
-      {/* ---------- Cancel confirmation dialog ---------- */}
       {cancelTarget && (
         <CancelBookingDialog
           booking={cancelTarget}

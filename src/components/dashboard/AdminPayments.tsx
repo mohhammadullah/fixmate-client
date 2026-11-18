@@ -6,11 +6,9 @@ import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
 
-/* ================================================================== */
-/*  Admin payment management — GET /api/admin/payments                    */
-/*  Read-only by design: payment statuses are owned by the verified      */
-/*  Stripe webhook. No status editing, no refunds, no manual marks.      */
-/* ================================================================== */
+/** Admin payment management — GET /api/admin/payments.
+ *  Read-only by design: payment statuses are owned by the verified Stripe
+ *  webhook. No status editing, no refunds, no manual marks. */
 
 export const PAYMENT_RECORD_STATUSES = [
   "pending",
@@ -74,10 +72,6 @@ class AdminPaymentsError extends Error {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PAGE_SIZE = 12;
 const DEBOUNCE_MS = 350;
-
-/* ================================================================== */
-/*  Runtime response validation — fail loudly on contract drift.       */
-/* ================================================================== */
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -163,10 +157,6 @@ function parsePaymentsResponse(body: unknown): PaymentsData {
   return { items: body.data.map(parsePayment), summary: parseSummary(body.summary), pagination: parsePagination(body.pagination) };
 }
 
-/* ================================================================== */
-/*  API calls — JWT retrieved dynamically per request; never stored.   */
-/* ================================================================== */
-
 async function fetchAccessToken(): Promise<string> {
   let response: { data: unknown; error: null | ({ status: number } & Record<string, unknown>) };
   try {
@@ -221,9 +211,6 @@ async function fetchAdminPayments(filters: PaymentFilters, page: number, signal:
   return parsePaymentsResponse(body);
 }
 
-/* ================================================================== */
-/*  Display helpers                                                    */
-/* ================================================================== */
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
 const timeFormatter = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" });
@@ -267,9 +254,6 @@ function Badge({ label, className }: { label: string; className: string }) {
   );
 }
 
-/* ================================================================== */
-/*  Summary cards                                                      */
-/* ================================================================== */
 
 function SummaryCards({ summary }: { summary: AdminPaymentsSummary }) {
   const totalAmountLabel = summary.successfulAmountByCurrency.length > 0
@@ -322,9 +306,6 @@ function SummaryCards({ summary }: { summary: AdminPaymentsSummary }) {
   );
 }
 
-/* ================================================================== */
-/*  Copy-to-clipboard (reference)                                      */
-/* ================================================================== */
 
 function CopyReferenceButton({ value }: { value: string }) {
   async function handleCopy() {
@@ -351,9 +332,6 @@ function CopyReferenceButton({ value }: { value: string }) {
   );
 }
 
-/* ================================================================== */
-/*  Payment row                                                        */
-/* ================================================================== */
 
 function PaymentRow({ payment }: { payment: AdminPayment }) {
   return (
@@ -396,9 +374,6 @@ function PaymentRow({ payment }: { payment: AdminPayment }) {
   );
 }
 
-/* ================================================================== */
-/*  Skeleton / error / empty states                                    */
-/* ================================================================== */
 
 function PaymentsSkeleton() {
   return (
@@ -449,9 +424,6 @@ function EmptyState({ filtered, onClear }: { filtered: boolean; onClear: () => v
   );
 }
 
-/* ================================================================== */
-/*  Main component                                                     */
-/* ================================================================== */
 
 const DEFAULT_FILTERS: PaymentFilters = { search: "", status: "all", from: "", to: "" };
 
@@ -535,7 +507,6 @@ export default function AdminPayments() {
 
   return (
     <div>
-      {/* ---------- Summary cards ---------- */}
       {state.phase === "success" && <SummaryCards summary={state.data.summary} />}
       {state.phase === "loading" && (
         <div aria-hidden="true" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -545,7 +516,6 @@ export default function AdminPayments() {
         </div>
       )}
 
-      {/* ---------- Filters ---------- */}
       <div className="mt-6 flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
         <div className="grid w-full gap-3 sm:grid-cols-2 xl:max-w-3xl">
           <div>
@@ -611,7 +581,6 @@ export default function AdminPayments() {
         </div>
       </div>
 
-      {/* ---------- Content ---------- */}
       <div className="mt-6" aria-busy={isLoading}>
         {state.phase === "loading" && <PaymentsSkeleton />}
 

@@ -57,7 +57,6 @@ export default function ServicesExplorer({
 
   return (
     <>
-      {/* ------------------------------------------------ Search & filters */}
       <form
         onSubmit={handleSubmit}
         role="search"
@@ -65,7 +64,6 @@ export default function ServicesExplorer({
         className="mx-auto mt-8 max-w-5xl rounded-2xl border border-border bg-surface p-4 shadow-lg sm:mt-10 sm:p-6"
       >
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-12">
-          {/* Search input */}
           <div className="relative md:col-span-2 lg:col-span-4">
             <label htmlFor="services-filter-search" className="sr-only">
               Search repair services
@@ -97,7 +95,6 @@ export default function ServicesExplorer({
             />
           </div>
 
-          {/* Category dropdown */}
           <div className="relative lg:col-span-3">
             <label htmlFor="services-filter-category" className="sr-only">
               Category
@@ -134,7 +131,6 @@ export default function ServicesExplorer({
             </svg>
           </div>
 
-          {/* Location input */}
           <div className="relative lg:col-span-2">
             <label htmlFor="services-filter-location" className="sr-only">
               Location
@@ -166,7 +162,6 @@ export default function ServicesExplorer({
             />
           </div>
 
-          {/* Actions */}
           <div className="flex gap-3 md:col-span-2 lg:col-span-3">
             <button
               type="submit"
@@ -215,7 +210,6 @@ export default function ServicesExplorer({
         </div>
       </form>
 
-      {/* ---------------------------------------------------------- Results */}
       <div className="mx-auto mt-12 max-w-6xl lg:mt-16">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <h2 className="text-xl font-extrabold tracking-tight text-heading sm:text-2xl">
@@ -251,7 +245,6 @@ export default function ServicesExplorer({
               strokeDasharray="5 6"
             />
             <circle cx="100" cy="64" r="34" fill="var(--surface-muted)" />
-            {/* Magnifier */}
             <circle
               cx="94"
               cy="60"
@@ -265,7 +258,6 @@ export default function ServicesExplorer({
               strokeWidth="2.5"
               strokeLinecap="round"
             />
-            {/* Wrench */}
             <path
               d="M120 38a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
               stroke="var(--color-accent-400)"

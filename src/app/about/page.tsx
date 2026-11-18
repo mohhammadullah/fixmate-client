@@ -105,7 +105,6 @@ const JOURNEY = [
 export default function AboutPage() {
   return (
     <main>
-      {/* ================= 1. ABOUT HERO ================= */}
       <section
         aria-labelledby="about-hero-heading"
         className="relative overflow-x-clip border-b border-border"
@@ -116,7 +115,6 @@ export default function AboutPage() {
         />
         <div className="container-page relative py-14 sm:py-18 lg:py-24">
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-            {/* Copy */}
             <div className="max-w-xl">
               <span className="inline-flex items-center gap-2 rounded-full border border-accent-100 bg-accent-50 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-strong dark:border-border dark:bg-surface-muted dark:text-accent">
                 About FixMate
@@ -232,7 +230,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ================= 2. OUR MISSION ================= */}
       <section aria-labelledby="mission-heading" className="border-b border-border">
         <div className="container-page py-14 lg:py-20">
           <div className="grid gap-8 lg:grid-cols-12">
@@ -269,7 +266,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ================= 3. WHAT WE AIM TO IMPROVE ================= */}
       <section
         aria-labelledby="improve-heading"
         className="border-b border-border bg-surface"
@@ -338,7 +334,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ================= 4. HOW FIXMATE WORKS ================= */}
       <section aria-labelledby="how-heading" className="border-b border-border">
         <div className="container-page py-14 lg:py-20">
           <div className="mx-auto max-w-2xl text-center">
@@ -397,7 +392,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ================= 5. FINAL CTA ================= */}
       <section aria-labelledby="about-cta-heading">
         <div className="container-page py-14 sm:py-18 lg:py-20">
           <div className="relative overflow-hidden rounded-3xl border border-navy-700 bg-gradient-to-r from-navy-950 via-navy-900 to-navy-800 px-6 py-12 sm:px-10 sm:py-14">

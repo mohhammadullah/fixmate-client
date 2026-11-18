@@ -8,10 +8,7 @@ import {
   type DashboardRole,
 } from "@/components/dashboard/DashboardSidebar";
 
-/* ================================================================== */
-/*  User profile — GET/PATCH /api/users/me. JWT is fetched per request   */
-/*  via Better Auth and never stored/logged/persisted.                    */
-/* ================================================================== */
+/** User profile — GET/PATCH /api/users/me. JWT is fetched per request via Better Auth and never stored/logged/persisted. */
 
 type ProfileRole = DashboardRole;
 
@@ -174,9 +171,6 @@ async function updateProfile(values: EditValues): Promise<Profile> {
   return parseProfile(body.data);
 }
 
-/* ================================================================== */
-/*  UI                                                                 */
-/* ================================================================== */
 
 const inputBase =
   "w-full rounded-xl border border-border-strong bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted shadow-xs outline-none transition-colors duration-200 hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25 aria-[invalid=true]:border-error/60";
@@ -243,9 +237,6 @@ function initials(name: string | null, email: string | null): string {
   return ((parts[0]?.[0] ?? "") + (parts.length > 1 ? (parts[parts.length - 1][0] ?? "") : "")).toUpperCase();
 }
 
-/* ================================================================== */
-/*  Main component                                                     */
-/* ================================================================== */
 
 export default function UserProfile() {
   const [state, setState] = useState<
@@ -378,7 +369,6 @@ export default function UserProfile() {
       {notice && <div role="status" className="rounded-xl border border-success/40 bg-success-soft/60 px-4 py-3 text-sm font-medium text-success">{notice}</div>}
 
       <div className="grid gap-6 lg:grid-cols-5">
-        {/* ---------- Identity card ---------- */}
         <section aria-labelledby="profile-identity-heading" className="overflow-hidden rounded-2xl border border-border bg-surface shadow-xs lg:col-span-2">
           <div className="relative h-24 bg-navy-900">
             <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-accent-500/20 blur-2xl" />
@@ -434,7 +424,6 @@ export default function UserProfile() {
           </div>
         </section>
 
-        {/* ---------- Edit form ---------- */}
         <section aria-labelledby="profile-edit-heading" className="rounded-2xl border border-border bg-surface p-5 shadow-xs sm:p-6 lg:col-span-3">
           <h2 id="profile-edit-heading" className="text-lg font-extrabold tracking-tight text-heading">Edit profile</h2>
           <p className="mt-1 text-xs text-muted">

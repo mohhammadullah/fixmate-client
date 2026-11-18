@@ -66,7 +66,6 @@ export default function FinalCTA() {
             <circle cx="14" cy="100" r="3" fill="#2fb8f5" fillOpacity="0.8" />
           </svg>
 
-          {/* Copy */}
           <div className="relative mx-auto max-w-2xl">
             <span className="inline-flex items-center gap-2 rounded-full border border-accent-400/30 bg-accent-400/10 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-400">
               Get Started with FixMate

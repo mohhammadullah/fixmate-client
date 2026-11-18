@@ -4,14 +4,9 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-/* ================================================================== */
-/*  Role handling — read from the Better Auth session at runtime.      */
-/*                                                                     */
-/*  `role` is a server-managed additional field that the auth client   */
-/*  intentionally does not infer (it is `input: false` on the server), */
-/*  so we narrow it defensively here instead of casting blindly.       */
-/*  Unknown or missing roles never receive privileged navigation.      */
-/* ================================================================== */
+/** Role handling — read from the Better Auth session at runtime.
+ *  `role` is a server-managed additional field (`input: false` on the
+ *  server), so we narrow it defensively; unknown roles get no privileges. */
 
 export type DashboardRole = "customer" | "technician" | "admin";
 
@@ -33,9 +28,6 @@ export function roleFromUser(user: unknown): DashboardRole | null {
   return parseDashboardRole((user as Record<string, unknown>).role);
 }
 
-/* ================================================================== */
-/*  Navigation model                                                   */
-/* ================================================================== */
 
 type GlyphProps = { className?: string };
 
@@ -254,9 +246,6 @@ export function navItemsForRole(role: DashboardRole | null): DashboardNavItem[] 
   return role ? DASHBOARD_NAV[role] : FALLBACK_NAV_ITEMS;
 }
 
-/* ================================================================== */
-/*  Sidebar                                                            */
-/* ================================================================== */
 
 function isItemActive(pathname: string, href: string): boolean {
   const current = pathname.replace(/\/+$/, "") || "/";

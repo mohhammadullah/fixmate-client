@@ -46,7 +46,6 @@ export default function SearchSection() {
       />
 
       <div className="container-page relative py-14 lg:py-20">
-        {/* Heading */}
         <div className="mx-auto max-w-2xl text-center">
           <h2
             id="search-heading"
@@ -67,7 +66,6 @@ export default function SearchSection() {
           className="mx-auto mt-8 max-w-5xl rounded-2xl border border-border bg-surface p-4 shadow-lg sm:mt-10 sm:p-6"
         >
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-12">
-            {/* Search input */}
             <div className="relative md:col-span-2 lg:col-span-4">
               <label htmlFor="service-search" className="sr-only">
                 What needs to be repaired?
@@ -99,7 +97,6 @@ export default function SearchSection() {
               />
             </div>
 
-            {/* Category dropdown */}
             <div className="relative lg:col-span-3">
               <label htmlFor="service-category" className="sr-only">
                 Category
@@ -136,7 +133,6 @@ export default function SearchSection() {
               </svg>
             </div>
 
-            {/* Location input */}
             <div className="relative lg:col-span-2">
               <label htmlFor="service-location" className="sr-only">
                 Location
@@ -168,7 +164,6 @@ export default function SearchSection() {
               />
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
               className="flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md md:col-span-2 lg:col-span-3"

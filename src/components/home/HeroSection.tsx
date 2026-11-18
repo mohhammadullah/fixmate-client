@@ -57,7 +57,6 @@ export default function HeroSection() {
 
       <div className="container-page py-14 sm:py-18 lg:py-24">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          {/* -------------------------------------------------- Left: copy */}
           <div className="max-w-xl">
             {/* Badge */}
             <span className="inline-flex items-center gap-2 rounded-full border border-accent-100 bg-accent-50 py-1.5 pl-2 pr-4 text-xs font-semibold uppercase tracking-wider text-accent-strong dark:border-border dark:bg-surface-muted dark:text-accent">
@@ -81,7 +80,6 @@ export default function HeroSection() {
               Your Trusted Repair Partner
             </span>
 
-            {/* Heading */}
             <h1 className="mt-6 text-4xl font-extrabold leading-[1.1] tracking-tight text-heading sm:text-5xl xl:text-6xl">
               Expert Repairs.{" "}
               <span className="bg-gradient-to-r from-accent-600 via-accent-500 to-accent-400 bg-clip-text text-transparent">
@@ -168,7 +166,6 @@ export default function HeroSection() {
             </ul>
           </div>
 
-          {/* -------------------------------------- Right: visual card art */}
           <div className="relative mx-auto w-full max-w-md lg:max-w-xl">
             {/* Decorative dot grid */}
             <div
@@ -188,7 +185,6 @@ export default function HeroSection() {
 
             {/* Main repair-request card */}
             <div className="relative mx-auto w-full max-w-sm rounded-2xl border border-border bg-surface p-6 shadow-lg">
-              {/* Card header */}
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <span

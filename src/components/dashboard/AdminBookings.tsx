@@ -11,9 +11,7 @@ import {
   type PaymentStatus,
 } from "@/components/dashboard/MyBookings";
 
-/* ================================================================== */
-/*  Admin all-bookings — read-only view of GET /api/admin/bookings        */
-/* ================================================================== */
+/** Admin all-bookings — read-only view of GET /api/admin/bookings. */
 
 interface AdminBooking {
   id: string;

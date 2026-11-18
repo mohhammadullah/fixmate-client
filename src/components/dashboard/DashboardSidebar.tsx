@@ -187,6 +187,12 @@ export const DASHBOARD_NAV: Record<DashboardRole, DashboardNavItem[]> = {
       icon: InboxGlyph,
     },
     {
+      label: "Payment History",
+      href: "/dashboard/technician-payments",
+      description: "Settled and outstanding payments for your completed jobs.",
+      icon: ReceiptGlyph,
+    },
+    {
       label: "Profile",
       href: "/dashboard/profile",
       description: "Your personal details and account settings.",

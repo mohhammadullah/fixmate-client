@@ -10,12 +10,14 @@ import {
 import {
   roleFromUser,
 } from "@/components/dashboard/DashboardSidebar";
+import {
+  PAYMENT_SYNC_INTERVAL_MS,
+  resolvePollDecision,
+} from "@/lib/payment-sync";
 
 /** Payment success — the redirect alone never marks anything paid. Stripe redirected the browser here; the authoritative state lives in the FixMate backend, where the Stripe webhook reconciles the payment. This screen polls the booking until its paymentStatus flips to "paid", and stays honest until then. */
 
 const OBJECT_ID_HEX_REGEX = /^[0-9a-fA-F]{24}$/;
-const MAX_POLL_ATTEMPTS = 8;
-const POLL_INTERVAL_MS = 3000;
 
 type SuccessState =
   | { phase: "loading" }
@@ -189,15 +191,16 @@ export default function PaymentSuccess({
       try {
         const snapshot = await fetchBookingPaymentState(bookingId, controller.signal);
         if (cancelled) return;
-        if (snapshot.paymentStatus === "paid") {
+        const decision = resolvePollDecision(snapshot.paymentStatus, attemptsRef.current);
+        if (decision === "confirmed") {
           setState({ phase: "confirmed", paymentStatus: "paid", finalAmount: snapshot.finalAmount });
           return;
         }
-        if (attemptsRef.current >= MAX_POLL_ATTEMPTS) {
+        if (decision === "awaiting") {
           setState({ phase: "awaiting" });
           return;
         }
-        timeout = window.setTimeout(poll, POLL_INTERVAL_MS);
+        timeout = window.setTimeout(poll, PAYMENT_SYNC_INTERVAL_MS);
       } catch (error: unknown) {
         if (cancelled) return;
         if (error instanceof DOMException && error.name === "AbortError") return;

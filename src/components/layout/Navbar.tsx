@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ThemeToggle from "@/components/layout/ThemeToggle";
+import UserAvatarMenu, { UserAccountSection } from "@/components/layout/UserAvatarMenu";
 import { authClient } from "@/lib/auth-client";
 
 const NAV_LINKS = [
@@ -13,44 +14,6 @@ const NAV_LINKS = [
   { label: "About Us", href: "/about" },
 ] as const;
 
-function DashboardIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={className}
-    >
-      <rect x="3" y="3" width="7" height="9" rx="1.5" />
-      <rect x="14" y="3" width="7" height="5" rx="1.5" />
-      <rect x="14" y="12" width="7" height="9" rx="1.5" />
-      <rect x="3" y="16" width="7" height="5" rx="1.5" />
-    </svg>
-  );
-}
-
-function ProfileIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={className}
-    >
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
-    </svg>
-  );
-}
-
 export default function Navbar() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -59,15 +22,6 @@ export default function Navbar() {
   // `null` data means signed out; no tokens are stored manually anywhere.
   const { data: session, isPending: isSessionPending } = authClient.useSession();
   const sessionUser = session?.user ?? null;
-  const normalizedPathname = pathname.replace(/\/+$/, "") || "/";
-  const isDashboardRoute =
-    normalizedPathname === "/dashboard" ||
-    normalizedPathname.startsWith("/dashboard/");
-
-  const dashboardLinkBase =
-    "inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 active:scale-[0.97]";
-  const dashboardLinkActive = `${dashboardLinkBase} bg-accent-50 text-accent-strong dark:bg-surface-muted dark:text-accent`;
-  const dashboardLinkInactive = `${dashboardLinkBase} text-muted hover:bg-surface-muted hover:text-heading active:bg-surface-muted active:text-heading`;
 
   // Close the mobile menu whenever the route changes by adjusting state
   // during render (avoids cascading renders from effects).
@@ -162,32 +116,11 @@ export default function Navbar() {
               /* Session unresolved — avoid flashing auth state */
               <span
                 aria-hidden="true"
-                className="h-9 w-28 animate-pulse rounded-full bg-surface-muted"
+                className="h-11 w-11 animate-pulse rounded-full bg-surface-muted"
               />
             ) : sessionUser ? (
-              /* Signed in — dashboard + profile; identity + sign out live in the dashboard header */
-              <>
-                <Link
-                  href="/dashboard"
-                  aria-current={isDashboardRoute ? "page" : undefined}
-                  className={
-                    isDashboardRoute ? dashboardLinkActive : dashboardLinkInactive
-                  }
-                >
-                  <DashboardIcon className="h-4 w-4" />
-                  Dashboard
-                </Link>
-                <Link
-                  href="/dashboard/profile"
-                  aria-current={pathname === "/dashboard/profile" ? "page" : undefined}
-                  className={
-                    pathname === "/dashboard/profile" ? dashboardLinkActive : dashboardLinkInactive
-                  }
-                >
-                  <ProfileIcon className="h-4 w-4" />
-                  Profile
-                </Link>
-              </>
+              /* Signed in — avatar opens the account dropdown */
+              <UserAvatarMenu user={sessionUser} />
             ) : (
               /* Signed out — auth entry points */
               <>
@@ -211,40 +144,40 @@ export default function Navbar() {
           <div className="flex shrink-0 items-center gap-1 md:hidden">
             <ThemeToggle />
             <button
-            type="button"
-            onClick={() => setIsMenuOpen((open) => !open)}
-            aria-expanded={isMenuOpen}
-            aria-controls="mobile-menu"
-            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-            className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-heading transition-all duration-200 hover:bg-surface-muted active:scale-95 active:bg-surface-muted"
-          >
-            {isMenuOpen ? (
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-6 w-6"
-                aria-hidden="true"
-              >
-                <path d="M18 6 6 18M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-6 w-6"
-                aria-hidden="true"
-              >
-                <path d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
+              type="button"
+              onClick={() => setIsMenuOpen((open) => !open)}
+              aria-expanded={isMenuOpen}
+              aria-controls="mobile-menu"
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+              className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-heading transition-all duration-200 hover:bg-surface-muted active:scale-95 active:bg-surface-muted"
+            >
+              {isMenuOpen ? (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-6 w-6"
+                  aria-hidden="true"
+                >
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-6 w-6"
+                  aria-hidden="true"
+                >
+                  <path d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
             </button>
           </div>
         </div>
@@ -278,62 +211,36 @@ export default function Navbar() {
                 })}
               </ul>
 
-              <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
-                {isSessionPending && !sessionUser ? (
-                  /* Session unresolved — avoid flashing auth state */
-                  <div className="px-4 py-2" aria-hidden="true">
+              {isSessionPending && !sessionUser ? (
+                /* Session unresolved — avoid flashing auth state */
+                <div className="mt-4 border-t border-border pt-4">
+                  <div className="flex items-center gap-3 px-4 py-2" aria-hidden="true">
+                    <span className="block h-11 w-11 animate-pulse rounded-full bg-surface-muted" />
                     <span className="block h-4 w-36 animate-pulse rounded bg-surface-muted" />
                   </div>
-                ) : sessionUser ? (
-                  /* Signed in — dashboard + profile; identity + sign out live in the dashboard header */
-                  <>
-                    <Link
-                      href="/dashboard"
-                      aria-current={isDashboardRoute ? "page" : undefined}
-                      onClick={() => setIsMenuOpen(false)}
-                      className={`flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-base font-semibold transition-colors duration-200 ${
-                        isDashboardRoute
-                          ? "bg-accent-50 text-accent-strong dark:bg-surface-muted dark:text-accent"
-                          : "text-foreground hover:bg-surface-muted hover:text-heading active:bg-surface-muted active:text-heading"
-                      }`}
-                    >
-                      <DashboardIcon className="h-5 w-5 shrink-0" />
-                      Dashboard
-                    </Link>
-                    <Link
-                      href="/dashboard/profile"
-                      aria-current={pathname === "/dashboard/profile" ? "page" : undefined}
-                      onClick={() => setIsMenuOpen(false)}
-                      className={`flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-base font-semibold transition-colors duration-200 ${
-                        pathname === "/dashboard/profile"
-                          ? "bg-accent-50 text-accent-strong dark:bg-surface-muted dark:text-accent"
-                          : "text-foreground hover:bg-surface-muted hover:text-heading active:bg-surface-muted active:text-heading"
-                      }`}
-                    >
-                      <ProfileIcon className="h-5 w-5 shrink-0" />
-                      Profile
-                    </Link>
-                  </>
-                ) : (
-                  /* Signed out — auth entry points */
-                  <>
-                    <Link
-                      href="/sign-in"
-                      onClick={() => setIsMenuOpen(false)}
-                      className="cursor-pointer rounded-lg px-4 py-3 text-center text-base font-medium text-foreground transition-colors duration-200 hover:bg-surface-muted hover:text-heading active:bg-surface-muted active:text-heading"
-                    >
-                      Sign In
-                    </Link>
-                    <Link
-                      href="/sign-up"
-                      onClick={() => setIsMenuOpen(false)}
-                      className="cursor-pointer rounded-full bg-primary px-5 py-3 text-center text-base font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:scale-[0.98] active:bg-primary-hover"
-                    >
-                      Get Started
-                    </Link>
-                  </>
-                )}
-              </div>
+                </div>
+              ) : sessionUser ? (
+                /* Signed in — avatar identity + account actions */
+                <UserAccountSection user={sessionUser} />
+              ) : (
+                /* Signed out — auth entry points */
+                <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
+                  <Link
+                    href="/sign-in"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="cursor-pointer rounded-lg px-4 py-3 text-center text-base font-medium text-foreground transition-colors duration-200 hover:bg-surface-muted hover:text-heading active:bg-surface-muted active:text-heading"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/sign-up"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="cursor-pointer rounded-full bg-primary px-5 py-3 text-center text-base font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:scale-[0.98] active:bg-primary-hover"
+                  >
+                    Get Started
+                  </Link>
+                </div>
+              )}
             </nav>
           </div>
         )}

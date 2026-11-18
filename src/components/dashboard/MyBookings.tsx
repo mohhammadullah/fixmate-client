@@ -5,6 +5,10 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { createCheckoutSession, CheckoutSessionError } from "@/lib/payments";
+import {
+  ALL_SERVICE_CATEGORIES,
+  type AnyServiceCategory,
+} from "@/lib/service-categories";
 
 /** Types mirror the backend contract exactly:
  *  GET /api/bookings/my (verifyToken + verifyCustomer) returns
@@ -24,16 +28,6 @@ export type BookingStatus = (typeof BOOKING_STATUSES)[number];
 export const PAYMENT_STATUSES = ["unpaid", "paid", "refunded"] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
-export const SERVICE_CATEGORIES = [
-  "Mobile Repair",
-  "Laptop Repair",
-  "Refrigerator Repair",
-  "AC Repair",
-  "TV Repair",
-  "Home Appliance Repair",
-] as const;
-export type ServiceCategory = (typeof SERVICE_CATEGORIES)[number];
-
 export interface CustomerBooking {
   _id: string;
   serviceId: string;
@@ -44,7 +38,7 @@ export interface CustomerBooking {
   technicianName: string;
   technicianEmail: string;
   serviceTitle: string;
-  serviceCategory: ServiceCategory;
+  serviceCategory: AnyServiceCategory;
   serviceLocation: string;
   serviceImage: string;
   hourlyRate: number;
@@ -52,6 +46,14 @@ export interface CustomerBooking {
   problemDescription: string;
   status: BookingStatus;
   paymentStatus: PaymentStatus;
+  /** Optional appointment schedule (present when chosen at booking time). */
+  schedule?: {
+    date: string;
+    slotStart: string;
+    slotEnd: string;
+    durationMinutes: number;
+    timezone: string;
+  };
   /** Only present once the technician settles the final repair charge. */
   finalAmount?: number;
   createdAt: string;
@@ -133,6 +135,26 @@ function requiredEnum<T extends string>(
   return value as T;
 }
 
+function optionalScheduleValue(raw: unknown): CustomerBooking["schedule"] {
+  if (!isRecord(raw)) return undefined;
+  if (
+    typeof raw.date !== "string" ||
+    typeof raw.slotStart !== "string" ||
+    typeof raw.slotEnd !== "string" ||
+    typeof raw.durationMinutes !== "number" ||
+    typeof raw.timezone !== "string"
+  ) {
+    return undefined;
+  }
+  return {
+    date: raw.date,
+    slotStart: raw.slotStart,
+    slotEnd: raw.slotEnd,
+    durationMinutes: raw.durationMinutes,
+    timezone: raw.timezone,
+  };
+}
+
 function parseBooking(raw: unknown): CustomerBooking {
   if (!isRecord(raw)) {
     throw new BookingsError("parse", "The server returned an unexpected booking payload.");
@@ -147,7 +169,7 @@ function parseBooking(raw: unknown): CustomerBooking {
     technicianName: requiredString(raw, "technicianName"),
     technicianEmail: requiredString(raw, "technicianEmail"),
     serviceTitle: requiredString(raw, "serviceTitle"),
-    serviceCategory: requiredEnum(raw, "serviceCategory", SERVICE_CATEGORIES),
+    serviceCategory: requiredEnum(raw, "serviceCategory", ALL_SERVICE_CATEGORIES),
     serviceLocation: requiredString(raw, "serviceLocation"),
     serviceImage: typeof raw.serviceImage === "string" ? raw.serviceImage : "",
     hourlyRate: requiredFiniteNumber(raw, "hourlyRate"),
@@ -160,6 +182,7 @@ function parseBooking(raw: unknown): CustomerBooking {
     status: requiredEnum(raw, "status", BOOKING_STATUSES),
     paymentStatus: requiredEnum(raw, "paymentStatus", PAYMENT_STATUSES),
     finalAmount: optionalFiniteNumber(raw, "finalAmount"),
+    schedule: optionalScheduleValue(raw.schedule),
     createdAt: requiredString(raw, "createdAt"),
     updatedAt: requiredString(raw, "updatedAt"),
   };
@@ -822,6 +845,34 @@ function BookingCard({
             </span>
           </p>
 
+          {/* Appointment schedule */}
+          {booking.schedule && (
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-[11px] font-semibold text-accent-strong dark:text-accent">
+              <svg
+                viewBox="0 0 24 24"
+                width="12"
+                height="12"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="h-3 w-3"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+              {new Intl.DateTimeFormat("en-GB", {
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+              }).format(new Date(`${booking.schedule.date}T12:00:00Z`))}
+              <span aria-hidden="true"> · </span>
+              {booking.schedule.slotStart}
+            </p>
+          )}
+
           {/* Problem description — real, customer-supplied data */}
           {booking.problemDescription && (
             <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted">
@@ -1252,6 +1303,27 @@ export default function MyBookings() {
       controller.abort();
     };
   }, [page, status, reloadToken]);
+
+  // Revalidate in the background when the window regains focus or
+  // visibility — e.g. the customer returns from the Stripe Checkout tab
+  // or restores this page from the back/forward cache. Keeps stale
+  // "Pending" badges from lingering; never flashes a skeleton.
+  const lastRevalidateRef = useRef(0);
+  useEffect(() => {
+    function revalidate() {
+      if (document.visibilityState !== "visible") return;
+      const now = Date.now();
+      if (now - lastRevalidateRef.current < 500) return;
+      lastRevalidateRef.current = now;
+      setReloadToken((token) => token + 1);
+    }
+    window.addEventListener("focus", revalidate);
+    document.addEventListener("visibilitychange", revalidate);
+    return () => {
+      window.removeEventListener("focus", revalidate);
+      document.removeEventListener("visibilitychange", revalidate);
+    };
+  }, []);
 
   function handleStatusChange(event: React.ChangeEvent<HTMLSelectElement>) {
     const value = event.target.value;

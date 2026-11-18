@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SERVICE_CATEGORIES, categoryHref } from "@/lib/service-categories";
 
 const QUICK_LINKS = [
   { label: "Home", href: "/" },
@@ -7,14 +8,12 @@ const QUICK_LINKS = [
   { label: "About Us", href: "/about" },
 ] as const;
 
-const SERVICE_CATEGORIES = [
-  { label: "Mobile Repair", href: "/services#mobile-repair" },
-  { label: "Laptop Repair", href: "/services#laptop-repair" },
-  { label: "Refrigerator Repair", href: "/services#refrigerator-repair" },
-  { label: "AC Repair", href: "/services#ac-repair" },
-  { label: "TV Repair", href: "/services#tv-repair" },
-  { label: "Home Appliance Repair", href: "/services#home-appliance-repair" },
-] as const;
+// One canonical link per assignment category. Every link lands on the real
+// Services listing with that category filter applied (no dead fragments).
+const CATEGORY_LINKS = SERVICE_CATEGORIES.map((label) => ({
+  label,
+  href: categoryHref(label),
+}));
 
 const CONTACT = [
   {
@@ -118,7 +117,7 @@ export default async function Footer() {
               Service Categories
             </h2>
             <ul className="mt-4 grid grid-cols-1 gap-2.5">
-              {SERVICE_CATEGORIES.map((service) => (
+              {CATEGORY_LINKS.map((service) => (
                 <li key={service.label}>
                   <Link href={service.href} className={linkClass}>
                     {service.label}

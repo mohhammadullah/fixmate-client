@@ -118,16 +118,30 @@ Auth is handled by Better Auth on the backend. On the client:
   backend base URL and sends the session cookie automatically.
 - `src/components/dashboard/DashboardSidebar.tsx` maps each role to its
   navigation:
-  - **Customer** — Overview, My Bookings, Payment History, Profile,
+  - **Customer** — Overview, My Bookings, Payment History, Notifications, Profile,
     Become a Technician.
-  - **Technician** — Overview, My Services, Incoming Bookings, Profile.
-  - **Admin / Main Admin** — Overview, User Management, Payments,
-    Service Moderation, Technician Applications, All Bookings, Profile.
+  - **Technician** — Overview, My Services, Incoming Bookings, Availability, Payment
+    History, Notifications, Profile.
+  - **Admin / Main Admin** — Overview, User Management, Payments, Refunds,
+    Coupons (Main Admin only for writes), Technician Applications, All Bookings,
+    Analytics, Notifications, Service Moderation, Profile.
 - The dashboard layout (`src/app/dashboard/layout.tsx`) redirects
   unauthenticated users to `/sign-in` and shows an inline access-denied
   panel for signed-in users whose role cannot access a given page.
 - Server-side authorization is always the source of truth — client UI
   restrictions are UX conveniences only.
+
+## Real-time and notifications
+
+- The client connects to the backend's Socket.IO endpoint (`/socket.io`) with
+  a short-lived Better Auth JWT from `GET /api/auth/token` (fetched per
+  connection attempt — never stored in `localStorage`/`sessionStorage`).
+- Live events: `notification`, `chat:message`, `chat:read`. The notification
+  bell and chat panel subscribe; everything degrades gracefully to
+  request/response loading when the socket is down.
+- In-app notifications persist on the backend (embedded on the user
+  document, capped at 50 entries) and are paginated on
+  `/dashboard/notifications`.
 
 ## Image upload and Stripe payments
 

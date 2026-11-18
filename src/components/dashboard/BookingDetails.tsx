@@ -1,25 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
 import {
   BOOKING_STATUSES,
   PAYMENT_STATUSES,
-  SERVICE_CATEGORIES,
   type BookingStatus,
   type PaymentStatus,
-  type ServiceCategory,
 } from "@/components/dashboard/MyBookings";
+import {
+  ALL_SERVICE_CATEGORIES as SERVICE_CATEGORIES,
+  type AnyServiceCategory as ServiceCategory,
+} from "@/lib/service-categories";
+import { createCheckoutSession, CheckoutSessionError } from "@/lib/payments";
+import { getReviewEligibility } from "@/lib/review";
+import ReviewForm from "@/components/dashboard/ReviewForm";
+import ChatPanel from "@/components/dashboard/ChatPanel";
+import BookingTimeline, { type PublicTimelineEvent } from "@/components/dashboard/BookingTimeline";
 
 /** Types — mirror the backend Booking Details DTO exactly.
  *  GET /api/bookings/:id (verifyToken + verifyCustomer, customer's own booking)
  *  returns { success, data }; the safe DTO excludes customer identity, serviceId
  *  and securityDeposit. Mongo dates serialize as ISO strings; finalAmount is only
  *  set once a job is completed. */
-
 export interface BookingDetails {
   /** Mongo ObjectId hex string — the booking reference. */
   id: string;
@@ -39,6 +46,38 @@ export interface BookingDetails {
   paymentStatus: PaymentStatus;
   /** Only present once the technician settles the final repair charge. */
   finalAmount?: number;
+  /** The customer's own review of this booking, when submitted. */
+  review?: {
+    rating: number;
+    comment: string;
+    createdAt: string;
+  };
+  /** Optional appointment schedule. */
+  schedule?: {
+    date: string;
+    slotStart: string;
+    slotEnd: string;
+    durationMinutes: number;
+    timezone: string;
+  };
+  /** Server-written timeline events. */
+  timeline?: PublicTimelineEvent[];
+  /** Unread messages for the viewing participant. */
+  chatUnread?: number;
+  /** Invoice snapshot once issued. */
+  invoice?: {
+    number: string;
+    issuedAt: string;
+    currency: string;
+    serviceAmount: number;
+    discountAmount: number;
+    discountCode?: string;
+    taxAmount: number;
+    totalAmount: number;
+    paymentStatus: string;
+    paidAt?: string;
+    bookingReference: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -122,6 +161,112 @@ function requiredEnum<T extends string>(
   return value as T;
 }
 
+function parseReview(raw: unknown): BookingDetails["review"] {
+  if (raw === undefined || raw === null) return undefined;
+  if (!isRecord(raw)) {
+    throw new BookingDetailsError(
+      "parse",
+      "The server returned an unexpected review payload."
+    );
+  }
+  const rating = raw.rating;
+  if (
+    typeof rating !== "number" ||
+    !Number.isInteger(rating) ||
+    rating < 1 ||
+    rating > 5
+  ) {
+    throw new BookingDetailsError(
+      "parse",
+      "The server returned an unexpected review rating."
+    );
+  }
+  const comment = raw.comment;
+  if (typeof comment !== "string" || comment.trim().length === 0) {
+    throw new BookingDetailsError(
+      "parse",
+      "The server returned an unexpected review comment."
+    );
+  }
+  const createdAt = raw.createdAt;
+  if (typeof createdAt !== "string" || Number.isNaN(Date.parse(createdAt))) {
+    throw new BookingDetailsError(
+      "parse",
+      "The server returned an unexpected review date."
+    );
+  }
+  return { rating, comment, createdAt };
+}
+
+function optionalTimeline(raw: unknown): PublicTimelineEvent[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const events: PublicTimelineEvent[] = [];
+  for (const item of raw) {
+    if (!isRecord(item)) continue;
+    const type = item.type;
+    const at = item.at;
+    const by = item.by;
+    if (typeof type !== "string" || typeof at !== "string" || typeof by !== "string") continue;
+    events.push({
+      type,
+      at,
+      by,
+      ...(typeof item.note === "string" && item.note ? { note: item.note } : {}),
+    });
+  }
+  return events.length > 0 ? events : undefined;
+}
+
+function optionalSchedule(raw: unknown): BookingDetails["schedule"] | undefined {
+  if (!isRecord(raw)) return undefined;
+  if (
+    typeof raw.date !== "string" ||
+    typeof raw.slotStart !== "string" ||
+    typeof raw.slotEnd !== "string" ||
+    typeof raw.durationMinutes !== "number" ||
+    typeof raw.timezone !== "string"
+  ) {
+    return undefined;
+  }
+  return {
+    date: raw.date,
+    slotStart: raw.slotStart,
+    slotEnd: raw.slotEnd,
+    durationMinutes: raw.durationMinutes,
+    timezone: raw.timezone,
+  };
+}
+
+function optionalInvoice(raw: unknown): BookingDetails["invoice"] {
+  if (!isRecord(raw)) return undefined;
+  if (
+    typeof raw.number !== "string" ||
+    typeof raw.issuedAt !== "string" ||
+    typeof raw.currency !== "string" ||
+    typeof raw.serviceAmount !== "number" ||
+    typeof raw.discountAmount !== "number" ||
+    typeof raw.taxAmount !== "number" ||
+    typeof raw.totalAmount !== "number" ||
+    typeof raw.paymentStatus !== "string" ||
+    typeof raw.bookingReference !== "string"
+  ) {
+    return undefined;
+  }
+  return {
+    number: raw.number,
+    issuedAt: raw.issuedAt,
+    currency: raw.currency,
+    serviceAmount: raw.serviceAmount,
+    discountAmount: raw.discountAmount,
+    ...(typeof raw.discountCode === "string" && raw.discountCode ? { discountCode: raw.discountCode } : {}),
+    taxAmount: raw.taxAmount,
+    totalAmount: raw.totalAmount,
+    paymentStatus: raw.paymentStatus,
+    ...(typeof raw.paidAt === "string" && raw.paidAt ? { paidAt: raw.paidAt } : {}),
+    bookingReference: raw.bookingReference,
+  };
+}
+
 function parseBookingDetails(raw: unknown): BookingDetails {
   if (!isRecord(raw)) {
     throw new BookingDetailsError(
@@ -164,6 +309,11 @@ function parseBookingDetails(raw: unknown): BookingDetails {
     status: requiredEnum(raw, "status", BOOKING_STATUSES),
     paymentStatus: requiredEnum(raw, "paymentStatus", PAYMENT_STATUSES),
     finalAmount: optionalFiniteNumber(raw, "finalAmount"),
+    review: parseReview(raw.review),
+    schedule: optionalSchedule(raw.schedule),
+    timeline: optionalTimeline(raw.timeline),
+    chatUnread: typeof raw.chatUnread === "number" && Number.isFinite(raw.chatUnread) ? raw.chatUnread : undefined,
+    invoice: optionalInvoice(raw.invoice),
     createdAt: requiredString(raw, "createdAt"),
     updatedAt: requiredString(raw, "updatedAt"),
   };
@@ -297,78 +447,6 @@ async function fetchBookingDetails(
   }
 
   return parseDetailsResponse(body);
-}
-
-/* Stripe Checkout — amount is server-side (from the booking); the browser
- * only forwards the booking reference. */
-
-async function createCheckoutSession(bookingId: string): Promise<string> {
-  const token = await fetchAccessToken();
-
-  let response: Response;
-  try {
-    response = await fetch(`${API_BASE}/api/payments/checkout-session`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      // The booking reference only — amount/currency/identity are never
-      // sent from the browser.
-      body: JSON.stringify({ bookingId }),
-    });
-  } catch {
-    throw new BookingDetailsError(
-      "network",
-      "Couldn't reach the payment service. Check your connection and try again."
-    );
-  }
-
-  let body: unknown = null;
-  try {
-    body = await response.json();
-  } catch {
-    // Non-JSON body — handled by the status checks below.
-  }
-
-  const serverMessage =
-    isRecord(body) && typeof body.message === "string" && body.message.length > 0 && body.message.length <= 200
-      ? body.message
-      : null;
-
-  if (response.status === 401) {
-    throw new BookingDetailsError(
-      "unauthorized",
-      "Your session has expired. Sign in again to pay for this booking."
-    );
-  }
-
-  if (response.status === 409) {
-    throw new BookingDetailsError(
-      "conflict",
-      serverMessage ?? "This booking can't be paid right now."
-    );
-  }
-
-  if (!response.ok) {
-    throw new BookingDetailsError(
-      "server",
-      serverMessage ?? "Couldn't start the payment. Please try again."
-    );
-  }
-
-  const data = isRecord(body) ? body.data : null;
-  const url = isRecord(data) && typeof data.url === "string" ? data.url : null;
-
-  if (!url || !url.startsWith("https://")) {
-    throw new BookingDetailsError(
-      "parse",
-      "The server returned an unexpected checkout response."
-    );
-  }
-
-  return url;
 }
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -644,7 +722,7 @@ function PayNowSection({
       window.location.assign(checkoutUrl);
       // Keep the button disabled: navigation is in flight.
     } catch (error) {
-      if (error instanceof BookingDetailsError) {
+      if (error instanceof CheckoutSessionError) {
         toast.error(error.message);
       } else {
         toast.error("Something went wrong while starting the payment. Please try again.");
@@ -777,7 +855,44 @@ function SummaryRow({
   );
 }
 
-function BookingDetailsView({ booking }: { booking: BookingDetails }) {
+function ReviewStars({ rating }: { rating: number }) {
+  return (
+    <span
+      role="img"
+      aria-label={`Rated ${rating} out of 5 stars`}
+      className="flex items-center gap-0.5"
+    >
+      {Array.from({ length: 5 }, (_, index) => {
+        const filled = index < rating;
+        return (
+          <svg
+            key={index}
+            viewBox="0 0 24 24"
+            width="17"
+            height="17"
+            fill={filled ? "currentColor" : "none"}
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className={`h-[17px] w-[17px] ${filled ? "text-warning" : "text-border-strong"}`}
+          >
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          </svg>
+        );
+      })}
+    </span>
+  );
+}
+
+function BookingDetailsView({
+  booking,
+  onReviewSubmitted,
+}: {
+  booking: BookingDetails;
+  onReviewSubmitted: () => void;
+}) {
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="space-y-6 lg:col-span-2">
@@ -811,6 +926,18 @@ function BookingDetailsView({ booking }: { booking: BookingDetails }) {
                 />
               </div>
               <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
+                {booking.schedule && (
+                  <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-4 w-4 shrink-0 text-accent-strong dark:text-accent"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+                    <span className="text-xs font-semibold text-heading">
+                      {new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short" }).format(new Date(`${booking.schedule.date}T12:00:00Z`))}
+                      <span aria-hidden="true"> · </span>
+                      {booking.schedule.slotStart}–{booking.schedule.slotEnd}
+                      <span aria-hidden="true"> · </span>
+                      <span className="font-normal text-muted">{booking.schedule.timezone}</span>
+                    </span>
+                  </div>
+                )}
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
                     Hourly rate
@@ -911,6 +1038,139 @@ function BookingDetailsView({ booking }: { booking: BookingDetails }) {
             </div>
           </div>
         </section>
+
+        {/* Timeline */}
+        {booking.timeline && booking.timeline.length > 0 && (
+          <section
+            aria-labelledby="booking-timeline-heading"
+            className="rounded-2xl border border-border bg-surface p-5 shadow-xs sm:p-6"
+          >
+            <h2
+              id="booking-timeline-heading"
+              className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-muted"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="h-4 w-4 text-accent-500"
+              >
+                <path d="M10 13a5 5 0 0 0 7.07 0l3.54-3.54a5 5 0 0 0-7.07-7.07L12 4" />
+                <path d="M14 11a5 5 0 0 0-7.07 0L3.4 14.54a5 5 0 0 0 7.07 7.07L12 20" />
+              </svg>
+              Timeline
+            </h2>
+            <BookingTimeline events={booking.timeline} />
+          </section>
+        )}
+
+        {/* Invoice — completed bookings only */}
+        {booking.status === "completed" && (
+          <section
+            aria-labelledby="booking-invoice-heading"
+            className="rounded-2xl border border-border bg-surface p-5 shadow-xs sm:p-6"
+          >
+            <h2
+              id="booking-invoice-heading"
+              className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-muted"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="h-4 w-4 text-accent-500"
+              >
+                <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
+                <path d="M8 7h8M8 12h8M8 17h4" />
+              </svg>
+              Invoice
+            </h2>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                {booking.invoice ? (
+                  <>
+                    <p className="font-mono text-sm font-bold text-heading">{booking.invoice.number}</p>
+                    <p className="mt-0.5 text-xs capitalize text-muted">{booking.invoice.paymentStatus.replace(/_/g, " ")} · {new Intl.NumberFormat("en-US", { style: "currency", currency: booking.invoice.currency.toUpperCase() }).format(booking.invoice.totalAmount)}</p>
+                  </>
+                ) : (
+                  <p className="text-xs text-muted">Your invoice is ready as soon as the booking settles.</p>
+                )}
+              </div>
+              <Link
+                href={`/dashboard/bookings/${booking.id}/invoice`}
+                className="inline-flex items-center gap-2 rounded-full border border-border-strong bg-surface px-4 py-2 text-xs font-semibold text-heading transition-colors hover:bg-surface-muted"
+              >
+                View invoice
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+              </Link>
+            </div>
+          </section>
+        )}
+
+        {/* Conversation with the technician */}
+        <ChatPanel bookingId={booking.id} />
+
+        {/* Review — only for completed bookings owned by this customer */}
+        {getReviewEligibility(booking.status, booking.review) !== "not-completed" && (
+          <section
+            aria-labelledby="booking-review-heading"
+            className="rounded-2xl border border-border bg-surface p-5 shadow-xs sm:p-6"
+          >
+            <h2
+              id="booking-review-heading"
+              className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-muted"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="h-4 w-4 text-accent-500"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              Your Review
+            </h2>
+
+            {booking.review ? (
+              <figure className="mt-4 rounded-2xl border border-accent-500/25 bg-accent-50/40 p-5 dark:bg-surface-muted/40">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <ReviewStars rating={booking.review.rating} />
+                  <time
+                    dateTime={booking.review.createdAt}
+                    className="text-[11px] font-medium tabular-nums text-muted"
+                  >
+                    {formatBookingDate(booking.review.createdAt)}
+                  </time>
+                </div>
+                <blockquote className="mt-3 whitespace-pre-line text-sm leading-6 text-foreground">
+                  &ldquo;{booking.review.comment}&rdquo;
+                </blockquote>
+                <figcaption className="mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-success">
+                  Published — thank you for your feedback
+                </figcaption>
+              </figure>
+            ) : (
+              <div className="mt-4">
+                <ReviewForm
+                  bookingId={booking.id}
+                  onSubmitted={onReviewSubmitted}
+                />
+              </div>
+            )}
+          </section>
+        )}
       </div>
 
       <aside
@@ -1071,6 +1331,7 @@ export function BookingDetailsScreen({ bookingId }: { bookingId: string }) {
 }
 
 export default function BookingDetails({ bookingId }: { bookingId: string }) {
+  const router = useRouter();
   const [reloadToken, setReloadToken] = useState(0);
   const [state, setState] = useState<
     | { phase: "loading" }
@@ -1109,10 +1370,39 @@ export default function BookingDetails({ bookingId }: { bookingId: string }) {
     };
   }, [bookingId, reloadToken]);
 
+  // Revalidate in the background when the window regains focus or
+  // visibility — e.g. the customer returns from the Stripe Checkout tab
+  // or restores this page from the back/forward cache. Keeps stale
+  // "Pending" badges from lingering; never flashes a skeleton.
+  const lastRevalidateRef = useRef(0);
+  useEffect(() => {
+    function revalidate() {
+      if (document.visibilityState !== "visible") return;
+      const now = Date.now();
+      if (now - lastRevalidateRef.current < 500) return;
+      lastRevalidateRef.current = now;
+      setReloadToken((token) => token + 1);
+    }
+    window.addEventListener("focus", revalidate);
+    document.addEventListener("visibilitychange", revalidate);
+    return () => {
+      window.removeEventListener("focus", revalidate);
+      document.removeEventListener("visibilitychange", revalidate);
+    };
+  }, []);
+
   function reload() {
     // Event handler — setting the loading phase synchronously is fine.
     setState({ phase: "loading" });
     setReloadToken((token) => token + 1);
+  }
+
+  function refreshSilently() {
+    // Background revalidation without flashing the skeleton — used after a
+    // review is submitted so the published review replaces the form. Also
+    // revalidates server components so rating aggregates refresh everywhere.
+    setReloadToken((token) => token + 1);
+    router.refresh();
   }
 
   return (
@@ -1133,7 +1423,9 @@ export default function BookingDetails({ bookingId }: { bookingId: string }) {
         <DetailsErrorPanel error={state.error} onRetry={reload} />
       )}
 
-      {state.phase === "success" && <BookingDetailsView booking={state.data} />}
+      {state.phase === "success" && (
+        <BookingDetailsView booking={state.data} onReviewSubmitted={refreshSilently} />
+      )}
     </div>
   );
 }

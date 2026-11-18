@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { ROLE_LABELS, type DashboardRole } from "@/components/dashboard/DashboardSidebar";
+import NotificationBell from "@/components/dashboard/NotificationBell";
 
 /** Derive up to two initials from the user's name, falling back to the
  *  email address, for the avatar fallback. */
@@ -174,8 +175,9 @@ export default function DashboardHeader({
           </p>
         </div>
 
-        {/* Identity + sign out */}
+        {/* Identity + notifications + sign out */}
         <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
+          <NotificationBell />
           <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
             <span
               aria-hidden="true"

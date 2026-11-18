@@ -9,7 +9,7 @@ import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
 import {
   SERVICE_CATEGORIES,
   type ServiceCategory,
-} from "@/components/dashboard/MyBookings";
+} from "@/lib/service-categories";
 
 /** Types — mirror the backend createServiceSchema exactly.
  *

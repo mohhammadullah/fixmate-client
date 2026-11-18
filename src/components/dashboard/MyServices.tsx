@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
+import { type BookingsPagination } from "@/components/dashboard/MyBookings";
 import {
-  SERVICE_CATEGORIES,
-  type BookingsPagination,
-  type ServiceCategory,
-} from "@/components/dashboard/MyBookings";
+  ALL_SERVICE_CATEGORIES as SERVICE_CATEGORIES,
+  type AnyServiceCategory as ServiceCategory,
+} from "@/lib/service-categories";
 
 /* Types mirror the backend GET /api/services/my DTO:
  * { success, data, pagination }; dates serialize as strings. Internal

@@ -7,9 +7,10 @@ import { authClient } from "@/lib/auth-client";
 import ServiceImageUpload from "@/components/dashboard/ServiceImageUpload";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
 import {
+  ALL_SERVICE_CATEGORIES,
   SERVICE_CATEGORIES,
-  type ServiceCategory,
-} from "@/components/dashboard/MyBookings";
+  type AnyServiceCategory,
+} from "@/lib/service-categories";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
@@ -116,8 +117,9 @@ function isValidHttpUrl(value: string): boolean {
   }
 }
 
-function isServiceCategory(value: string): value is ServiceCategory {
-  return SERVICE_CATEGORIES.some((category) => category === value);
+function isServiceCategory(value: string): value is AnyServiceCategory {
+  // Legacy values are accepted so an older service can still be edited.
+  return ALL_SERVICE_CATEGORIES.some((category) => category === value);
 }
 
 type FieldErrors = Partial<Record<string, string>>;
@@ -628,6 +630,13 @@ function EditServiceForm({ serviceId, service }: { serviceId: string; service: S
               <select id="edit-category" value={values.category ?? ""} onChange={(e) => updateField("category", e.target.value)} disabled={busy} aria-invalid={Boolean(errors.category) || undefined} className={selectBase}>
                 <option value="">Select a category…</option>
                 {SERVICE_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
+                {/* Keep an existing legacy value selectable so editing never
+                    silently overwrites or hides a service. */}
+                {values.category &&
+                  !SERVICE_CATEGORIES.some((category) => category === values.category) &&
+                  ALL_SERVICE_CATEGORIES.some((category) => category === values.category) && (
+                    <option value={values.category}>{values.category} (legacy)</option>
+                  )}
               </select>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted"><path d="m6 9 6 6 6-6" /></svg>
             </div>

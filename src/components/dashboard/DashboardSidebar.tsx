@@ -121,6 +121,42 @@ const CalendarGlyph = ({ className }: GlyphProps) => (
   </NavGlyph>
 );
 
+const BellGlyph = ({ className }: GlyphProps) => (
+  <NavGlyph className={className}>
+    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+  </NavGlyph>
+);
+
+const AvailabilityGlyph = ({ className }: GlyphProps) => (
+  <NavGlyph className={className}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3 2" />
+  </NavGlyph>
+);
+
+const AnalyticsGlyph = ({ className }: GlyphProps) => (
+  <NavGlyph className={className}>
+    <path d="M3 3v18h18" />
+    <path d="m7 14 4-4 4 4 6-6" />
+  </NavGlyph>
+);
+
+const RefundGlyph = ({ className }: GlyphProps) => (
+  <NavGlyph className={className}>
+    <path d="M3 12a9 9 0 1 0 9-9" />
+    <path d="M3 4v5h5" />
+    <path d="M12 7v5l3 2" />
+  </NavGlyph>
+);
+
+const CouponGlyph = ({ className }: GlyphProps) => (
+  <NavGlyph className={className}>
+    <path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3H4v5.59A2 2 0 0 0 3.83 11l9.59 9.58a2 2 0 0 0 2.83 0l4.34-4.34a2 2 0 0 0 0-2.84Z" />
+    <path d="M7 8h.01" />
+  </NavGlyph>
+);
+
 const CreditCardGlyph = ({ className }: GlyphProps) => (
   <NavGlyph className={className}>
     <rect x="2" y="5" width="20" height="14" rx="2" />
@@ -160,6 +196,12 @@ export const DASHBOARD_NAV: Record<DashboardRole, DashboardNavItem[]> = {
       icon: ReceiptGlyph,
     },
     {
+      label: "Notifications",
+      href: "/dashboard/notifications",
+      description: "Updates on your bookings, payments and account.",
+      icon: BellGlyph,
+    },
+    {
       label: "Profile",
       href: "/dashboard/profile",
       description: "Your personal details and account settings.",
@@ -187,10 +229,22 @@ export const DASHBOARD_NAV: Record<DashboardRole, DashboardNavItem[]> = {
       icon: InboxGlyph,
     },
     {
+      label: "Availability",
+      href: "/dashboard/availability",
+      description: "Set your working hours, days off and service areas.",
+      icon: AvailabilityGlyph,
+    },
+    {
       label: "Payment History",
       href: "/dashboard/technician-payments",
       description: "Settled and outstanding payments for your completed jobs.",
       icon: ReceiptGlyph,
+    },
+    {
+      label: "Notifications",
+      href: "/dashboard/notifications",
+      description: "Updates on your bookings, payments and account.",
+      icon: BellGlyph,
     },
     {
       label: "Profile",
@@ -229,6 +283,30 @@ export const DASHBOARD_NAV: Record<DashboardRole, DashboardNavItem[]> = {
       href: "/dashboard/admin/payments",
       description: "Stripe checkout payments and settlement across FixMate.",
       icon: CreditCardGlyph,
+    },
+    {
+      label: "Refunds",
+      href: "/dashboard/admin/refunds",
+      description: "Review and decide customer refund requests.",
+      icon: RefundGlyph,
+    },
+    {
+      label: "Coupons",
+      href: "/dashboard/admin/coupons",
+      description: "Create and manage promotional coupon codes (Main Admin).",
+      icon: CouponGlyph,
+    },
+    {
+      label: "Analytics",
+      href: "/dashboard/admin/analytics",
+      description: "Revenue, bookings and technician performance insights.",
+      icon: AnalyticsGlyph,
+    },
+    {
+      label: "Notifications",
+      href: "/dashboard/notifications",
+      description: "Platform events that need your attention.",
+      icon: BellGlyph,
     },
     {
       label: "Technician Applications",

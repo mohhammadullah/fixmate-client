@@ -7,13 +7,17 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test:payment-sync": "node scripts/payment-sync-test.mjs"
   },
   "dependencies": {
     "better-auth": "^1.7.25",
+    "lucide-react": "^1.75.0",
     "next": "16.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "recharts": "^3.11.0",
+    "socket.io-client": "^4.8.4",
     "sonner": "^2.0.8"
   },
   "devDependencies": {

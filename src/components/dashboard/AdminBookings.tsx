@@ -350,6 +350,16 @@ export default function AdminBookings() {
                       <div><dt className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Booked</dt><dd className="mt-0.5 font-medium text-heading">{formatDate(booking.createdAt)}</dd></div>
                     </dl>
                     <p className="mt-3 text-[10px] text-muted">Technician: {booking.technicianName || "—"} · Ref <code className="font-mono">{booking.id}</code></p>
+                    <div className="mt-3 flex justify-end border-t border-border pt-3">
+                      <Link
+                        href={`/dashboard/admin/bookings/${booking.id}`}
+                        aria-label={`View details for ${booking.serviceTitle}`}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent-strong transition-colors duration-200 hover:text-accent-600 dark:text-accent dark:hover:text-accent-400"
+                      >
+                        View details
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                      </Link>
+                    </div>
                   </article>
                 </li>
               ))}

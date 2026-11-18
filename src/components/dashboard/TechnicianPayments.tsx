@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
@@ -651,6 +651,26 @@ export default function TechnicianPayments() {
       controller.abort();
     };
   }, [page, filter, reloadToken]);
+
+  // Revalidate in the background when the window regains focus or
+  // visibility — e.g. a technician returns to this tab after a platform
+  // update to the shared database. Never flashes a skeleton.
+  const lastRevalidateRef = useRef(0);
+  useEffect(() => {
+    function revalidate() {
+      if (document.visibilityState !== "visible") return;
+      const now = Date.now();
+      if (now - lastRevalidateRef.current < 500) return;
+      lastRevalidateRef.current = now;
+      setReloadToken((token) => token + 1);
+    }
+    window.addEventListener("focus", revalidate);
+    document.addEventListener("visibilitychange", revalidate);
+    return () => {
+      window.removeEventListener("focus", revalidate);
+      document.removeEventListener("visibilitychange", revalidate);
+    };
+  }, []);
 
   function reload() {
     setState({ phase: "loading" });

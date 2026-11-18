@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 
@@ -528,6 +528,27 @@ export default function PaymentHistory() {
       controller.abort();
     };
   }, [page, reloadToken]);
+
+  // Revalidate in the background when the window regains focus or
+  // visibility — e.g. the customer returns from the Stripe Checkout tab
+  // or restores this page from the back/forward cache. Keeps stale
+  // "Pending" state from lingering; never flashes a skeleton.
+  const lastRevalidateRef = useRef(0);
+  useEffect(() => {
+    function revalidate() {
+      if (document.visibilityState !== "visible") return;
+      const now = Date.now();
+      if (now - lastRevalidateRef.current < 500) return;
+      lastRevalidateRef.current = now;
+      setReloadToken((token) => token + 1);
+    }
+    window.addEventListener("focus", revalidate);
+    document.addEventListener("visibilitychange", revalidate);
+    return () => {
+      window.removeEventListener("focus", revalidate);
+      document.removeEventListener("visibilitychange", revalidate);
+    };
+  }, []);
 
   function beginLoading() {
     setState({ phase: "loading" });

@@ -302,3 +302,25 @@ button:disabled,
     scroll-behavior: auto !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Print — keep the invoice sheet clean, hide app chrome
+   -------------------------------------------------------------------------- */
+@media print {
+  header,
+  footer,
+  nav {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #0b1b30 !important;
+  }
+
+  main,
+  .container-page {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+}

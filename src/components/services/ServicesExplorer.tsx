@@ -3,15 +3,9 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { SERVICE_CATEGORIES } from "@/lib/service-categories";
 
-const CATEGORIES = [
-  "Mobile Repair",
-  "Laptop Repair",
-  "Refrigerator Repair",
-  "AC Repair",
-  "TV Repair",
-  "Home Appliance Repair",
-] as const;
+const CATEGORIES = SERVICE_CATEGORIES;
 
 type ServicesExplorerProps = {
   initialSearch: string;

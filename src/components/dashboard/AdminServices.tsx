@@ -5,9 +5,9 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
 import {
-  SERVICE_CATEGORIES,
-  type ServiceCategory,
-} from "@/components/dashboard/MyBookings";
+  ALL_SERVICE_CATEGORIES as SERVICE_CATEGORIES,
+  type AnyServiceCategory as ServiceCategory,
+} from "@/lib/service-categories";
 
 /** Admin service moderation — GET /api/admin/services (admin only),
  *  plus PATCH /api/services/:id/approve | /reject. */

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
+import ChatPanel from "@/components/dashboard/ChatPanel";
 import {
   BOOKING_STATUSES,
   PAYMENT_STATUSES,
@@ -41,6 +42,13 @@ interface TechnicianBooking {
   status: BookingStatus;
   paymentStatus: PaymentStatus;
   finalAmount?: number;
+  schedule?: {
+    date: string;
+    slotStart: string;
+    slotEnd: string;
+    durationMinutes: number;
+    timezone: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -114,6 +122,26 @@ function requiredEnum<T extends string>(
   return value as T;
 }
 
+function optionalScheduleValue(raw: unknown): TechnicianBooking["schedule"] {
+  if (!isRecord(raw)) return undefined;
+  if (
+    typeof raw.date !== "string" ||
+    typeof raw.slotStart !== "string" ||
+    typeof raw.slotEnd !== "string" ||
+    typeof raw.durationMinutes !== "number" ||
+    typeof raw.timezone !== "string"
+  ) {
+    return undefined;
+  }
+  return {
+    date: raw.date,
+    slotStart: raw.slotStart,
+    slotEnd: raw.slotEnd,
+    durationMinutes: raw.durationMinutes,
+    timezone: raw.timezone,
+  };
+}
+
 function parseBooking(raw: unknown): TechnicianBooking {
   if (!isRecord(raw)) {
     throw new TechnicianBookingsError("parse", "The server returned an unexpected booking payload.");
@@ -137,6 +165,7 @@ function parseBooking(raw: unknown): TechnicianBooking {
     status: requiredEnum(raw, "status", BOOKING_STATUSES),
     paymentStatus: requiredEnum(raw, "paymentStatus", PAYMENT_STATUSES),
     finalAmount: optionalFiniteNumber(raw, "finalAmount"),
+    schedule: optionalScheduleValue(raw.schedule),
     createdAt: requiredString(raw, "createdAt"),
     updatedAt: requiredString(raw, "updatedAt"),
   };
@@ -1202,8 +1231,10 @@ function BookingCard({
   pendingAction: TransitionAction | null;
 }) {
   const [imageFailed, setImageFailed] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const showImage = booking.serviceImage.length > 0 && !imageFailed;
   const isRequested = booking.status === "requested";
+  const showChat = booking.status !== "cancelled" && booking.status !== "rejected";
 
   return (
     <article className="overflow-hidden rounded-2xl border border-border bg-surface shadow-xs transition-shadow duration-200 hover:shadow-md">
@@ -1280,6 +1311,33 @@ function BookingCard({
           {booking.problemDescription && (
             <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted">
               {booking.problemDescription}
+            </p>
+          )}
+
+          {booking.schedule && (
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-[11px] font-semibold text-accent-strong dark:text-accent">
+              <svg
+                viewBox="0 0 24 24"
+                width="12"
+                height="12"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="h-3 w-3"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+              {new Intl.DateTimeFormat("en-GB", {
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+              }).format(new Date(`${booking.schedule.date}T12:00:00Z`))}
+              <span aria-hidden="true"> · </span>
+              {booking.schedule.slotStart}
             </p>
           )}
 
@@ -1495,6 +1553,56 @@ function BookingCard({
           )}
         </div>
       </div>
+
+      {/* Conversation with the customer */}
+      {showChat && (
+        <div className="border-t border-border">
+          <button
+            type="button"
+            onClick={() => setChatOpen((open) => !open)}
+            aria-expanded={chatOpen}
+            aria-controls={`chat-${booking._id}`}
+            className="flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-3 text-xs font-semibold text-accent-strong transition-colors duration-200 hover:bg-surface-muted/60 dark:text-accent"
+          >
+            <span className="flex items-center gap-2">
+              <svg
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="h-[15px] w-[15px]"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              Conversation with {booking.customerName}
+            </span>
+            <svg
+              viewBox="0 0 24 24"
+              width="15"
+              height="15"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className={`h-[15px] w-[15px] transition-transform duration-200 ${chatOpen ? "rotate-180" : ""}`}
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+          {chatOpen && (
+            <div id={`chat-${booking._id}`} className="border-t border-border p-3">
+              <ChatPanel bookingId={booking._id} />
+            </div>
+          )}
+        </div>
+      )}
     </article>
   );
 }

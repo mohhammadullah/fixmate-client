@@ -1,20 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { toast } from "sonner";
+import ServiceCard, { type ServiceCardData } from "@/components/services/ServiceCard";
+import {
+  SERVICE_CATEGORIES,
+  ALL_SERVICE_CATEGORIES,
+  normalizeCategoryInput,
+} from "@/lib/service-categories";
 
 /** Types mirror the public GET /api/services contract (no auth, JWT or
  *  ownership data): only approved + available services, projecting out
  *  technicianId, technicianEmail, rejectionReason. */
 
-const CATEGORIES = [
-  "Mobile Repair",
-  "Laptop Repair",
-  "Refrigerator Repair",
-  "AC Repair",
-  "TV Repair",
-  "Home Appliance Repair",
-] as const;
+// Parse/accept every known category so legacy records are never hidden.
+// The filter UI itself offers only the seven canonical assignment categories.
+const CATEGORIES = ALL_SERVICE_CATEGORIES;
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest" },
@@ -35,6 +36,10 @@ interface PublicService {
   maxCapacity: number;
   amenities: string[];
   overview: string;
+  /** Public display name of the assigned technician. */
+  technicianName: string;
+  /** Actual aggregated rating from stored booking reviews. */
+  rating: ServiceCardData["rating"];
   createdAt: string;
   updatedAt: string;
 }
@@ -88,6 +93,26 @@ function requiredFiniteNumber(record: Record<string, unknown>, key: string): num
   return value;
 }
 
+function parseRating(raw: unknown): PublicService["rating"] {
+  if (!isRecord(raw)) {
+    return { averageRating: null, reviewCount: 0 };
+  }
+  const reviewCount =
+    typeof raw.reviewCount === "number" && Number.isFinite(raw.reviewCount) && raw.reviewCount >= 0
+      ? Math.floor(raw.reviewCount)
+      : 0;
+  const averageRating =
+    typeof raw.averageRating === "number" &&
+    Number.isFinite(raw.averageRating) &&
+    raw.averageRating >= 1 &&
+    raw.averageRating <= 5
+      ? raw.averageRating
+      : null;
+  return reviewCount > 0 && averageRating !== null
+    ? { averageRating, reviewCount }
+    : { averageRating: null, reviewCount: 0 };
+}
+
 function parseService(raw: unknown): PublicService {
   if (!isRecord(raw)) {
     throw new ServicesError("parse", "The server returned an unexpected service payload.");
@@ -115,6 +140,11 @@ function parseService(raw: unknown): PublicService {
       ? raw.amenities.filter((item): item is string => typeof item === "string")
       : [],
     overview: typeof raw.overview === "string" ? raw.overview : "",
+    technicianName:
+      typeof raw.technicianName === "string" && raw.technicianName.trim().length > 0
+        ? raw.technicianName.trim()
+        : "FixMate Technician",
+    rating: parseRating(raw.rating),
     createdAt: typeof raw.createdAt === "string" ? raw.createdAt : "",
     updatedAt: typeof raw.updatedAt === "string" ? raw.updatedAt : "",
   };
@@ -161,7 +191,7 @@ function parseServicesResponse(body: unknown): ServicesPageData {
   };
 }
 
-/** Public endpoint — never sends credentials or a JWT. */
+/** Public endpoint â€” never sends credentials or a JWT. */
 
 interface FetchOptions {
   page: number;
@@ -205,7 +235,7 @@ async function fetchServices(options: FetchOptions): Promise<ServicesPageData> {
   try {
     body = await response.json();
   } catch {
-    // Handled below — a non-JSON error page or empty body.
+    // Handled below â€” a non-JSON error page or empty body.
   }
 
   if (!response.ok) {
@@ -241,9 +271,6 @@ function getPriceError(minPrice: string, maxPrice: string): string | null {
   return null;
 }
 
-function formatAmount(value: number): string {
-  return new Intl.NumberFormat("en", { maximumFractionDigits: 2 }).format(value);
-}
 
 
 const fieldClass =
@@ -253,10 +280,10 @@ function ServicesSkeleton() {
   return (
     <div
       role="status"
-      aria-label="Loading services…"
+      aria-label="Loading servicesâ€¦"
       className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
     >
-      <span className="sr-only">Loading services…</span>
+      <span className="sr-only">Loading servicesâ€¦</span>
       {Array.from({ length: 6 }, (_, index) => (
         <div
           key={index}
@@ -348,131 +375,6 @@ function EmptyState({ onReset }: { onReset: () => void }) {
   );
 }
 
-function ServiceCard({ service }: { service: PublicService }) {
-  const [imageFailed, setImageFailed] = useState(false);
-  const showImage = service.image.length > 0 && !imageFailed;
-  const shownAmenities = service.amenities.slice(0, 3);
-  const hiddenAmenities = service.amenities.length - shownAmenities.length;
-
-  return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-500/40 hover:shadow-lg">
-      <div className="relative h-48 w-full overflow-hidden bg-navy-900">
-        {showImage ? (
-          // eslint-disable-next-line @next/next/no-img-element -- backend image URLs are remote and not known at build time, so next/image remotePatterns can't be configured.
-          <img
-            src={service.image}
-            alt={service.title}
-            loading="lazy"
-            onError={() => setImageFailed(true)}
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-          />
-        ) : (
-          <div aria-hidden="true" className="absolute inset-0 flex items-center justify-center">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-12 w-12 text-accent-400/60"
-            >
-              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-            </svg>
-          </div>
-        )}
-        <span className="absolute left-4 top-4 rounded-full border border-white/15 bg-navy-950/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-accent-100 backdrop-blur-sm">
-          {service.category}
-        </span>
-      </div>
-
-      <div className="flex flex-1 flex-col p-5">
-        <h3 className="text-base font-bold leading-snug text-heading sm:text-lg">
-          {service.title}
-        </h3>
-        <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-            className="h-3.5 w-3.5 shrink-0"
-          >
-            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-            <circle cx="12" cy="10" r="3" />
-          </svg>
-          <span className="min-w-0 truncate">{service.location}</span>
-        </p>
-
-        <dl className="mt-4 grid grid-cols-2 gap-3 border-y border-border py-3.5 text-xs">
-          <div>
-            <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
-              Hourly rate
-            </dt>
-            <dd className="mt-0.5 text-sm font-bold tabular-nums text-heading">
-              {formatAmount(service.hourlyRate)}
-              <span className="ml-1 text-[11px] font-medium text-muted">/hr</span>
-            </dd>
-          </div>
-          <div>
-            <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
-              Max capacity
-            </dt>
-            <dd className="mt-0.5 text-sm font-bold tabular-nums text-heading">
-              {service.maxCapacity}
-            </dd>
-          </div>
-        </dl>
-
-        {service.amenities.length > 0 && (
-          <ul aria-label="Amenities" className="mt-3 flex flex-wrap gap-1.5">
-            {shownAmenities.map((amenity) => (
-              <li
-                key={amenity}
-                className="rounded-full border border-border-strong bg-surface-muted px-2 py-0.5 text-[10px] font-medium text-foreground"
-              >
-                {amenity}
-              </li>
-            ))}
-            {hiddenAmenities > 0 && (
-              <li
-                title={service.amenities.join(", ")}
-                className="rounded-full border border-border-strong bg-surface-muted px-2 py-0.5 text-[10px] font-medium text-muted"
-              >
-                +{hiddenAmenities} more
-              </li>
-            )}
-          </ul>
-        )}
-
-        <Link
-          href={`/services/${service._id}`}
-          aria-label={`View details for ${service.title}`}
-          className="mt-auto inline-flex w-fit items-center gap-2 pt-5 text-xs font-semibold text-accent-strong transition-colors duration-200 hover:text-accent-600 dark:text-accent dark:hover:text-accent-400 cursor-pointer"
-        >
-          View Details
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-            className="h-3.5 w-3.5"
-          >
-            <path d="M5 12h14M13 6l6 6-6 6" />
-          </svg>
-        </Link>
-      </div>
-    </article>
-  );
-}
-
-
 export interface ServicesListingProps {
   initialSearch?: string;
   initialCategory?: string;
@@ -490,16 +392,16 @@ export default function ServicesListing({
   initialMaxPrice = "",
   initialSort = "newest",
 }: ServicesListingProps) {
-  const validInitialCategory = CATEGORIES.some((value) => value === initialCategory)
-    ? initialCategory
-    : "";
+  // A legacy alias from an old bookmark is normalised to its canonical value
+  // so the dropdown and the API filter stay in sync.
+  const validInitialCategory = normalizeCategoryInput(initialCategory);
   const validInitialSort = SORT_OPTIONS.some((option) => option.value === initialSort)
     ? (initialSort as SortOption)
     : "newest";
 
   const [search, setSearch] = useState(initialSearch);
   const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
-  const [category, setCategory] = useState(validInitialCategory);
+  const [category, setCategory] = useState<string>(validInitialCategory);
   const [location, setLocation] = useState(initialLocation);
   const [minPrice, setMinPrice] = useState(initialMinPrice);
   const [maxPrice, setMaxPrice] = useState(initialMaxPrice);
@@ -534,7 +436,7 @@ export default function ServicesListing({
       page,
       limit: PAGE_SIZE,
       search: debouncedSearch,
-      category,
+      category: normalizeCategoryInput(category) || "",
       location: location.trim(),
       minPrice: minPrice.trim(),
       maxPrice: maxPrice.trim(),
@@ -590,10 +492,75 @@ export default function ServicesListing({
     setMaxPrice("");
     setSort("newest");
     setPage(1);
+    setNearbyState(null);
   }
 
   const isLoading = state.phase === "loading";
   const totalItems = state.phase === "success" ? state.data.pagination.totalItems : null;
+  const [locating, setLocating] = useState(false);
+  const [nearbyState, setNearbyState] = useState<
+    { items: PublicService[]; meta: { sort: string } } | null
+  >(null);
+
+  // Nearby services: only with explicit user consent via the button below —
+  // coordinates never leave the device except to the FixMate API, and the
+  // API never returns raw coordinates to anyone.
+  async function handleNearMe() {
+    if (locating) return;
+    if (!("geolocation" in navigator)) {
+      toast.error("Your browser can't share your location. Try the Location search instead.");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const lat = position.coords.latitude.toFixed(5);
+          const lng = position.coords.longitude.toFixed(5);
+          const response = await fetch(
+            `${API_BASE}/api/services/nearby?lat=${lat}&lng=${lng}&limit=12`,
+            { headers: { accept: "application/json" } }
+          );
+          const body = (await response.json().catch(() => null)) as {
+            success?: boolean;
+            data?: unknown[];
+            meta?: { sort?: string };
+            message?: string;
+          } | null;
+          if (!response.ok || body?.success !== true || !Array.isArray(body.data)) {
+            toast.error(body?.message ?? "Could not load nearby services.");
+            return;
+          }
+          const items = (body.data as unknown[])
+            .map((raw) => {
+              try {
+                return parseService(raw);
+              } catch {
+                return null;
+              }
+            })
+            .filter((service): service is PublicService => service !== null);
+          setNearbyState({ items, meta: { sort: body.meta?.sort ?? "distance" } });
+          if (items.length === 0) {
+            toast("No services near you yet — try the area search above.");
+          }
+        } catch {
+          toast.error("Could not load nearby services. Please try again.");
+        } finally {
+          setLocating(false);
+        }
+      },
+      (error) => {
+        setLocating(false);
+        toast.error(
+          error.code === error.PERMISSION_DENIED
+            ? "Location permission denied — use the Location search instead."
+            : "Couldn't get your location. Use the Location search instead."
+        );
+      },
+      { timeout: 8000, maximumAge: 5 * 60 * 1000 }
+    );
+  }
 
   return (
     <div className="mx-auto mt-8 max-w-6xl lg:mt-10">
@@ -630,7 +597,7 @@ export default function ServicesListing({
                 setSearch(event.target.value);
                 resetPage();
               }}
-              placeholder="Search services…"
+              placeholder="Search servicesâ€¦"
               className={`${fieldClass} pl-11 pr-4`}
             />
           </div>
@@ -649,7 +616,7 @@ export default function ServicesListing({
               className={`${fieldClass} appearance-none pl-4 pr-10 cursor-pointer ${category === "" ? "text-muted" : ""}`}
             >
               <option value="">All categories</option>
-              {CATEGORIES.map((name) => (
+              {SERVICE_CATEGORIES.map((name) => (
                 <option key={name} value={name}>
                   {name}
                 </option>
@@ -804,6 +771,59 @@ export default function ServicesListing({
           </p>
         )}
       </form>
+
+      {/* Nearby discovery — explicit opt-in only */}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => void handleNearMe()}
+          disabled={locating}
+          className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border border-accent-500/40 bg-accent-50 px-4 text-xs font-semibold text-accent-strong transition-all duration-200 hover:bg-accent-100 hover:shadow-xs active:scale-[0.98] disabled:cursor-wait disabled:opacity-60 dark:border-accent-500/30 dark:bg-accent-400/10 dark:text-accent"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="15"
+            height="15"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className={`h-[15px] w-[15px] ${locating ? "animate-ping" : ""}`}
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+          </svg>
+          {locating ? "Locating…" : "Use my location for nearby services"}
+        </button>
+        {nearbyState && (
+          <button
+            type="button"
+            onClick={() => setNearbyState(null)}
+            className="inline-flex h-10 cursor-pointer items-center rounded-full border border-border px-4 text-xs font-semibold text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading"
+          >
+            Hide nearby results
+          </button>
+        )}
+      </div>
+
+      {nearbyState && (
+        <section aria-label="Nearby services" className="mt-6">
+          <p className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">
+            Nearest to you · {nearbyState.items.length} {nearbyState.items.length === 1 ? "service" : "services"} · sorted by distance
+          </p>
+          {nearbyState.items.length > 0 && (
+            <ul className="mt-3 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {nearbyState.items.map((service) => (
+                <li key={service._id} className="h-full">
+                  <ServiceCard service={service} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       <div className="mt-10 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <h2 className="text-xl font-extrabold tracking-tight text-heading sm:text-2xl">

@@ -4,6 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
+import BookingScheduleFields, { type BookingScheduleValue } from "@/components/services/BookingScheduleFields";
+import {
+  ALL_SERVICE_CATEGORIES,
+  displayCategory,
+  type AnyServiceCategory,
+} from "@/lib/service-categories";
 
 /** Types mirror the public service-details DTO.
  *  GET /api/services/:id returns the safe public projection of an approved
@@ -11,16 +17,10 @@ import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
  *  POST /api/bookings (verifyToken -> verifyCustomer) accepts ONLY
  *  { serviceId, problemDescription }; JWT is fetched per request. */
 
-const CATEGORIES = [
-  "Mobile Repair",
-  "Laptop Repair",
-  "Refrigerator Repair",
-  "AC Repair",
-  "TV Repair",
-  "Home Appliance Repair",
-] as const;
+// Accept legacy values from older records without hiding them.
+const CATEGORIES = ALL_SERVICE_CATEGORIES;
 
-type ServiceCategory = (typeof CATEGORIES)[number];
+type ServiceCategory = AnyServiceCategory;
 
 interface PublicServiceDetails {
   _id: string;
@@ -34,6 +34,11 @@ interface PublicServiceDetails {
   location: string;
   image: string;
   amenities: string[];
+  /** Actual aggregated rating from stored booking reviews. */
+  rating: {
+    averageRating: number | null;
+    reviewCount: number;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -97,6 +102,26 @@ function requiredFiniteNumber(record: Record<string, unknown>, key: string): num
   return value;
 }
 
+function parseRating(raw: unknown): PublicServiceDetails["rating"] {
+  if (!isRecord(raw)) {
+    return { averageRating: null, reviewCount: 0 };
+  }
+  const reviewCount =
+    typeof raw.reviewCount === "number" && Number.isFinite(raw.reviewCount) && raw.reviewCount >= 0
+      ? Math.floor(raw.reviewCount)
+      : 0;
+  const averageRating =
+    typeof raw.averageRating === "number" &&
+    Number.isFinite(raw.averageRating) &&
+    raw.averageRating >= 1 &&
+    raw.averageRating <= 5
+      ? raw.averageRating
+      : null;
+  return reviewCount > 0 && averageRating !== null
+    ? { averageRating, reviewCount }
+    : { averageRating: null, reviewCount: 0 };
+}
+
 function parseServiceDetails(raw: unknown): PublicServiceDetails {
   if (!isRecord(raw)) {
     throw new DetailsError("parse", "The server returned an unexpected service payload.");
@@ -108,7 +133,7 @@ function parseServiceDetails(raw: unknown): PublicServiceDetails {
   return {
     _id: requiredString(raw, "_id"),
     title: requiredString(raw, "title"),
-    category: category as ServiceCategory,
+    category: displayCategory(category) as ServiceCategory,
     description: typeof raw.description === "string" ? raw.description : "",
     overview: typeof raw.overview === "string" ? raw.overview : "",
     hourlyRate: requiredFiniteNumber(raw, "hourlyRate"),
@@ -122,6 +147,7 @@ function parseServiceDetails(raw: unknown): PublicServiceDetails {
     amenities: Array.isArray(raw.amenities)
       ? raw.amenities.filter((item): item is string => typeof item === "string")
       : [],
+    rating: parseRating(raw.rating),
     createdAt: typeof raw.createdAt === "string" ? raw.createdAt : "",
     updatedAt: typeof raw.updatedAt === "string" ? raw.updatedAt : "",
   };
@@ -212,7 +238,11 @@ async function fetchAccessToken(): Promise<string> {
   return data.token;
 }
 
-async function createBookingRequest(serviceId: string, problemDescription: string): Promise<string> {
+async function createBookingRequest(
+  serviceId: string,
+  problemDescription: string,
+  schedule?: { date: string; slotStart: string; timezone: string } | null
+): Promise<string> {
   const token = await fetchAccessToken();
 
   let response: Response;
@@ -224,9 +254,13 @@ async function createBookingRequest(serviceId: string, problemDescription: strin
         "Content-Type": "application/json",
       },
       credentials: "include",
-      // Only the two strict-schema fields — no customerId/technicianId,
+      // Only the strict-schema fields — no customerId/technicianId,
       // no status, no paymentStatus.
-      body: JSON.stringify({ serviceId, problemDescription }),
+      body: JSON.stringify({
+        serviceId,
+        problemDescription,
+        ...(schedule ? { schedule } : {}),
+      }),
     });
   } catch {
     throw new BookingError(
@@ -251,10 +285,21 @@ async function createBookingRequest(serviceId: string, problemDescription: strin
     );
   }
   if (response.status === 409) {
-    throw new BookingError(
-      "conflict",
-      "We couldn't create this booking. It may already be available, or this service is no longer bookable."
-    );
+    let serverMessagePayload: unknown = null;
+    try {
+      serverMessagePayload = await response.clone().json();
+    } catch {
+      serverMessagePayload = null;
+    }
+    const message =
+      serverMessagePayload &&
+      typeof serverMessagePayload === "object" &&
+      typeof (serverMessagePayload as { message?: unknown }).message === "string" &&
+      ((serverMessagePayload as { message: string }).message as string).length > 0 &&
+      ((serverMessagePayload as { message: string }).message as string).length <= 300
+        ? (serverMessagePayload as { message: string }).message
+        : "That slot was just taken or this service is no longer bookable. Please pick another slot.";
+    throw new BookingError("conflict", message);
   }
 
   let body: unknown = null;
@@ -404,6 +449,7 @@ function BookingPanel({ service }: { service: PublicServiceDetails }) {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
+  const [schedule, setSchedule] = useState<BookingScheduleValue | null>(null);
   const submitInFlightRef = useRef(false);
 
   const signInHref = `/sign-in?callbackURL=${encodeURIComponent(`/services/${service._id}`)}`;
@@ -426,7 +472,11 @@ function BookingPanel({ service }: { service: PublicServiceDetails }) {
     setFormError(null);
 
     try {
-      const message = await createBookingRequest(service._id, problemDescription.trim());
+      const message = await createBookingRequest(
+        service._id,
+        problemDescription.trim(),
+        schedule
+      );
       setSuccess(message);
       return;
     } catch (error) {
@@ -554,6 +604,12 @@ function BookingPanel({ service }: { service: PublicServiceDetails }) {
         Tell the technician what&apos;s wrong. Your booking is a request and isn&apos;t confirmed
         until the technician accepts it.
       </p>
+
+      <BookingScheduleFields
+        serviceId={service._id}
+        onChange={setSchedule}
+        disabled={submitting}
+      />
 
       {formError && (
         <div
@@ -763,6 +819,31 @@ function ServiceDetailsContent({ service }: { service: PublicServiceDetails }) {
                 <circle cx="12" cy="10" r="3" />
               </svg>
               {service.location}
+            </p>
+            <p className="mt-2.5 flex items-center gap-1.5 text-sm">
+              {service.rating.reviewCount > 0 && service.rating.averageRating !== null ? (
+                <>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="currentColor"
+                    aria-hidden="true"
+                    className="h-4 w-4 text-warning"
+                  >
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
+                  <span className="font-bold tabular-nums text-heading">
+                    {service.rating.averageRating.toFixed(1)}
+                  </span>
+                  <span className="text-muted">
+                    · {service.rating.reviewCount}{" "}
+                    {service.rating.reviewCount === 1 ? "review" : "reviews"}
+                  </span>
+                </>
+              ) : (
+                <span className="text-muted">No reviews yet</span>
+              )}
             </p>
           </div>
         </section>

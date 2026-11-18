@@ -452,7 +452,7 @@ export default function SignUpForm() {
 
   const inputBase =
     "w-full rounded-lg border bg-surface py-2.5 pl-11 pr-12 text-sm text-foreground shadow-xs outline-none transition-colors duration-200 placeholder:text-muted/80 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25";
-  const inputValid = "border-border-strong hover:border-border-strong";
+  const inputValid = "border-border-strong hover:border-accent-500";
   const inputInvalid = "border-error bg-error-soft/40";
 
   const passwordInputBase =
@@ -567,7 +567,7 @@ export default function SignUpForm() {
           <div className="w-full max-w-md">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 rounded-full text-xs font-medium text-muted transition-colors duration-200 hover:text-heading"
+              className="inline-flex items-center gap-2 rounded-full text-xs font-medium text-muted transition-colors duration-200 hover:text-heading cursor-pointer"
             >
               <Icon className="h-4 w-4">
                 <path d="M19 12H5M12 19l-7-7 7-7" />
@@ -793,7 +793,7 @@ export default function SignUpForm() {
                         onClick={() => setShowPassword((visible) => !visible)}
                         aria-pressed={showPassword}
                         aria-label={showPassword ? "Hide password" : "Show password"}
-                        className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading"
+                        className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading cursor-pointer active:scale-95"
                       >
                         {showPassword ? (
                           <Icon {...iconProps}>
@@ -853,7 +853,7 @@ export default function SignUpForm() {
                         onClick={() => setShowConfirmPassword((visible) => !visible)}
                         aria-pressed={showConfirmPassword}
                         aria-label={showConfirmPassword ? "Hide password confirmation" : "Show password confirmation"}
-                        className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading"
+                        className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading cursor-pointer active:scale-95"
                       >
                         {showConfirmPassword ? (
                           <Icon {...iconProps}>
@@ -885,7 +885,7 @@ export default function SignUpForm() {
                   type="submit"
                   disabled={isSubmitting}
                   aria-busy={isSubmitting}
-                  className="relative inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md disabled:cursor-not-allowed disabled:opacity-70"
+                  className="relative inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 enabled:hover:bg-primary-hover enabled:hover:shadow-md enabled:active:bg-primary-hover enabled:active:scale-[0.98] cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isSubmitting ? (
                     <>
@@ -920,7 +920,7 @@ export default function SignUpForm() {
                 Already have a FixMate account?{" "}
                 <Link
                   href="/sign-in"
-                  className="font-semibold text-accent-strong underline underline-offset-4 transition-colors duration-200 hover:text-accent dark:text-accent dark:hover:text-accent-strong"
+                  className="font-semibold text-accent-strong underline underline-offset-4 transition-colors duration-200 hover:text-accent dark:text-accent dark:hover:text-accent-strong cursor-pointer"
                 >
                   Sign in instead
                 </Link>

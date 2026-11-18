@@ -319,8 +319,8 @@ async function patchService(id: string, payload: Record<string, unknown>): Promi
 
 
 const inputBase =
-  "w-full rounded-lg border border-border-strong bg-surface px-4 py-2.5 text-sm text-foreground shadow-xs outline-none transition-colors duration-200 placeholder:text-muted hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25 aria-[invalid=true]:border-error/60";
-const selectBase = `${inputBase} appearance-none pr-10`;
+  "w-full rounded-lg border border-border-strong bg-surface px-4 py-2.5 text-sm text-foreground shadow-xs outline-none transition-colors duration-200 placeholder:text-muted enabled:hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25 aria-[invalid=true]:border-error/60";
+const selectBase = `${inputBase} appearance-none pr-10 cursor-pointer disabled:cursor-not-allowed`;
 
 function Field({
   id,
@@ -372,7 +372,7 @@ function AccessDenied({ role }: { role: "customer" | "admin" | null }) {
           ? `You're signed in with a ${roleLabel} account, so you can't edit services here. Your dashboard only shows the sections your role can use.`
           : "Your account's role isn't recognized, so this section isn't available. Please contact FixMate support if this looks wrong."}
       </p>
-      <Link href="/dashboard" className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md">
+      <Link href="/dashboard" className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]">
         Back to your dashboard
       </Link>
     </section>
@@ -388,7 +388,7 @@ function ErrorPanel({ title, message }: { title: string; message: string }) {
       </svg>
       <h2 className="mt-3 text-lg font-bold text-heading">{title}</h2>
       <p className="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-muted">{message}</p>
-      <Link href="/dashboard/my-services" className="mt-5 inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted">
+      <Link href="/dashboard/my-services" className="mt-5 inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted cursor-pointer active:bg-surface-muted">
         Back to My Services
       </Link>
     </div>
@@ -574,9 +574,9 @@ function EditServiceForm({ serviceId, service }: { serviceId: string; service: S
         <p className="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-muted">{sessionError.message}</p>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
           {unauthorized ? (
-            <Link href="/sign-in" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md">Sign in again</Link>
+            <Link href="/sign-in" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]">Sign in again</Link>
           ) : (
-            <Link href="/dashboard/my-services" className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted">Back to My Services</Link>
+            <Link href="/dashboard/my-services" className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted cursor-pointer active:bg-surface-muted">Back to My Services</Link>
           )}
         </div>
       </div>
@@ -593,7 +593,7 @@ function EditServiceForm({ serviceId, service }: { serviceId: string; service: S
         <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
           {updated} Your service is now <span className="font-semibold text-warning">pending approval</span> — the FixMate team reviews updated services before customers can book them. Taking you to My Services…
         </p>
-        <Link href="/dashboard/my-services" className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md">Go to My Services now</Link>
+        <Link href="/dashboard/my-services" className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]">Go to My Services now</Link>
       </div>
     );
   }
@@ -603,7 +603,7 @@ function EditServiceForm({ serviceId, service }: { serviceId: string; service: S
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/dashboard/my-services" className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted">
+        <Link href="/dashboard/my-services" className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted cursor-pointer active:bg-surface-muted">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-4 w-4"><path d="M19 12H5M11 18l-6-6 6-6" /></svg>
           Back to My Services
         </Link>
@@ -684,7 +684,7 @@ function EditServiceForm({ serviceId, service }: { serviceId: string; service: S
                   {amenities.map((amenity, index) => (
                     <li key={`${amenity}-${index}`} className="inline-flex items-center gap-1.5 rounded-full border border-border-strong bg-surface-muted py-1 pl-3 pr-1.5 text-xs font-medium text-foreground">
                       <span className="max-w-48 truncate">{amenity}</span>
-                      <button type="button" onClick={() => removeAmenity(index)} disabled={busy} aria-label={`Remove amenity ${amenity}`} className="flex h-5 w-5 items-center justify-center rounded-full text-muted transition-colors duration-200 hover:bg-error-soft hover:text-error disabled:cursor-not-allowed">
+                      <button type="button" onClick={() => removeAmenity(index)} disabled={busy} aria-label={`Remove amenity ${amenity}`} className="flex h-5 w-5 items-center justify-center rounded-full text-muted transition-colors duration-200 enabled:hover:bg-error-soft enabled:hover:text-error cursor-pointer enabled:active:scale-90 disabled:cursor-not-allowed disabled:opacity-50">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-3 w-3"><path d="M18 6 6 18M6 6l12 12" /></svg>
                       </button>
                     </li>
@@ -693,7 +693,7 @@ function EditServiceForm({ serviceId, service }: { serviceId: string; service: S
               )}
               <div className="flex items-center gap-2">
                 <input id="edit-amenity-input" type="text" value={amenityDraft} onChange={(e) => { setAmenityDraft(e.target.value); setAmenityError(null); }} onKeyDown={handleAmenityKeyDown} disabled={busy} autoComplete="off" aria-label="Add an amenity" aria-invalid={Boolean(amenityError ?? errors.amenities) || undefined} placeholder="e.g. Home visit, Original parts…" className="min-w-0 flex-1 border-0 bg-transparent px-2 py-1.5 text-sm text-foreground outline-none placeholder:text-muted" />
-                <button type="button" onClick={() => addAmenity(amenityDraft)} disabled={busy || amenityDraft.trim().length === 0} className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50">Add</button>
+                <button type="button" onClick={() => addAmenity(amenityDraft)} disabled={busy || amenityDraft.trim().length === 0} className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted cursor-pointer enabled:active:bg-surface-muted enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50">Add</button>
               </div>
             </div>
           </Field>
@@ -702,7 +702,7 @@ function EditServiceForm({ serviceId, service }: { serviceId: string; service: S
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="max-w-sm text-[11px] leading-relaxed text-muted">Updating a service resets its approval status to <span className="font-semibold text-warning">Pending</span> — the FixMate team reviews every service update before customers can book it.</p>
-        <button type="submit" disabled={busy} aria-live="polite" className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60">
+        <button type="submit" disabled={busy} aria-live="polite" className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 enabled:hover:bg-primary-hover enabled:hover:shadow-md cursor-pointer enabled:active:bg-primary-hover enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60">
           {busy ? (
             <>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" className="h-4 w-4 animate-spin motion-reduce:animate-none"><circle cx="12" cy="12" r="9" strokeOpacity="0.3" /><path d="M21 12a9 9 0 0 0-9-9" /></svg>
@@ -777,7 +777,7 @@ export default function EditService({ serviceId }: { serviceId: string }) {
         <p className="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-muted">{loadError.message}</p>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
           {unauthorized ? (
-            <Link href="/sign-in" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md">Sign in again</Link>
+            <Link href="/sign-in" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]">Sign in again</Link>
           ) : (
             <button
               type="button"
@@ -785,7 +785,7 @@ export default function EditService({ serviceId }: { serviceId: string }) {
                 setLoading(true);
                 setReloadToken((token) => token + 1);
               }}
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]"
             >
               Try again
             </button>

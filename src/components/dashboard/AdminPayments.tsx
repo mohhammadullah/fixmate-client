@@ -322,7 +322,7 @@ function CopyReferenceButton({ value }: { value: string }) {
       onClick={handleCopy}
       aria-label="Copy reference"
       title="Copy reference"
-      className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-md text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading"
+      className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-md text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading cursor-pointer active:scale-95"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-4 w-4">
         <rect x="9" y="9" width="12" height="12" rx="2" />
@@ -401,9 +401,9 @@ function ErrorPanel({ error, onRetry }: { error: AdminPaymentsError; onRetry: ()
       <p className="mx-auto mt-1.5 max-w-md text-sm text-muted">{error.message}</p>
       <div className="mt-5">
         {unauthorized ? (
-          <Link href="/sign-in" className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Sign in again</Link>
+          <Link href="/sign-in" className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Sign in again</Link>
         ) : (
-          <button type="button" onClick={onRetry} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Try again</button>
+          <button type="button" onClick={onRetry} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Try again</button>
         )}
       </div>
     </div>
@@ -418,7 +418,7 @@ function EmptyState({ filtered, onClear }: { filtered: boolean; onClear: () => v
         {filtered ? "No Stripe payments match your filters." : "No payments have been recorded yet — they appear here as customers check out."}
       </p>
       {filtered && (
-        <button type="button" onClick={onClear} className="mt-5 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted">Clear filters</button>
+        <button type="button" onClick={onClear} className="mt-5 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted cursor-pointer active:bg-surface-muted">Clear filters</button>
       )}
     </div>
   );
@@ -479,7 +479,7 @@ export default function AdminPayments() {
       <section className="flex min-h-[50vh] flex-col items-center justify-center px-6 py-16 text-center">
         <h1 className="text-2xl font-extrabold tracking-tight text-heading">Admin access only</h1>
         <p className="mx-auto mt-2 max-w-md text-sm text-muted">Payment reconciliation is available to administrators only.</p>
-        <Link href="/dashboard" className="mt-6 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Back to your dashboard</Link>
+        <Link href="/dashboard" className="mt-6 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Back to your dashboard</Link>
       </section>
     );
   }
@@ -536,7 +536,7 @@ export default function AdminPayments() {
                 id="admin-payment-status"
                 value={filters.status}
                 onChange={selectFilter}
-                className="mt-1.5 h-11 w-full rounded-lg border border-border-strong bg-surface px-3 text-sm font-medium text-foreground outline-none transition-colors duration-200 hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25"
+                className="mt-1.5 h-11 w-full rounded-lg border border-border-strong bg-surface px-3 text-sm font-medium text-foreground outline-none transition-colors duration-200 hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25 cursor-pointer"
               >
                 <option value="all">All statuses</option>
                 <option value="succeeded">Succeeded</option>
@@ -574,7 +574,7 @@ export default function AdminPayments() {
             onClick={() => { setState({ phase: "loading" }); setReloadToken((token) => token + 1); }}
             disabled={isLoading}
             aria-label="Refresh payments"
-            className="flex h-11 w-11 items-center justify-center rounded-lg border border-border text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-11 w-11 items-center justify-center rounded-lg border border-border text-muted transition-colors duration-200 enabled:hover:bg-surface-muted enabled:hover:text-heading disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:scale-95"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`h-5 w-5 ${isLoading ? "animate-spin motion-reduce:animate-none" : ""}`}><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6" /></svg>
           </button>
@@ -601,11 +601,11 @@ export default function AdminPayments() {
             </ul>
 
             <nav aria-label="Payments pagination" className="mt-6 flex items-center justify-between gap-3 border-t border-border pt-5">
-              <button type="button" onClick={() => { setState({ phase: "loading" }); setPage(Math.max(1, state.data.pagination.currentPage - 1)); }} disabled={!state.data.pagination.hasPrevPage || isLoading} className="rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50">Previous</button>
+              <button type="button" onClick={() => { setState({ phase: "loading" }); setPage(Math.max(1, state.data.pagination.currentPage - 1)); }} disabled={!state.data.pagination.hasPrevPage || isLoading} className="rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:bg-surface-muted">Previous</button>
               <p className="text-center text-xs font-medium tabular-nums text-muted sm:text-sm">
                 Page <span className="font-semibold text-heading">{state.data.pagination.currentPage}</span> of <span className="font-semibold text-heading">{Math.max(state.data.pagination.totalPages, 1)}</span>
               </p>
-              <button type="button" onClick={() => { setState({ phase: "loading" }); setPage(state.data.pagination.currentPage + 1); }} disabled={!state.data.pagination.hasNextPage || isLoading} className="rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50">Next</button>
+              <button type="button" onClick={() => { setState({ phase: "loading" }); setPage(state.data.pagination.currentPage + 1); }} disabled={!state.data.pagination.hasNextPage || isLoading} className="rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:bg-surface-muted">Next</button>
             </nav>
           </>
         )}

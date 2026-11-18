@@ -399,7 +399,7 @@ function TransferMainAdminDialog({
               id="transfer-target"
               value={selectedId}
               onChange={(event) => setSelectedId(event.target.value)}
-              className="mt-1.5 h-11 w-full appearance-none rounded-lg border border-border-strong bg-surface px-4 pr-10 text-sm font-medium text-foreground outline-none transition-colors duration-200 hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25"
+              className="mt-1.5 h-11 w-full appearance-none rounded-lg border border-border-strong bg-surface px-4 pr-10 text-sm font-medium text-foreground outline-none transition-colors duration-200 hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25 cursor-pointer"
             >
               <option value="">Choose an admin…</option>
               {eligible.map((item) => (
@@ -429,8 +429,8 @@ function TransferMainAdminDialog({
 
         {error && <div role="alert" className="mt-4 rounded-xl border border-error/40 bg-error-soft/60 px-4 py-3 text-xs leading-relaxed text-error">{error}</div>}
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button type="button" onClick={onDismiss} disabled={pending} className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60">Cancel</button>
-          <button ref={confirmRef} type="button" disabled={!canSubmit} onClick={() => onConfirm(selected?.id ?? "", password)} aria-live="polite" className="rounded-full bg-warning px-5 py-2.5 text-sm font-semibold text-[#1a1200] shadow-sm transition-all duration-200 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60">
+          <button type="button" onClick={onDismiss} disabled={pending} className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:bg-surface-muted">Cancel</button>
+          <button ref={confirmRef} type="button" disabled={!canSubmit} onClick={() => onConfirm(selected?.id ?? "", password)} aria-live="polite" className="rounded-full bg-warning px-5 py-2.5 text-sm font-semibold text-[#1a1200] shadow-sm transition-all duration-200 enabled:hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:scale-[0.98]">
             {pending ? "Transferring…" : "Transfer ownership"}
           </button>
         </div>
@@ -540,8 +540,8 @@ function RoleChangeDialog({
         </div>
         {error && <div role="alert" className="mt-4 rounded-xl border border-error/40 bg-error-soft/60 px-4 py-3 text-xs leading-relaxed text-error">{error}</div>}
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button type="button" onClick={onDismiss} disabled={pending} className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60">Cancel</button>
-          <button ref={confirmRef} type="button" onClick={onConfirm} disabled={pending} aria-live="polite" className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60">
+          <button type="button" onClick={onDismiss} disabled={pending} className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:bg-surface-muted">Cancel</button>
+          <button ref={confirmRef} type="button" onClick={onConfirm} disabled={pending} aria-live="polite" className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 enabled:hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:bg-primary-hover active:scale-[0.98]">
             {pending ? (
               <>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" className="h-4 w-4 animate-spin motion-reduce:animate-none">
@@ -724,7 +724,7 @@ export default function AdminUsers() {
       <section className="flex min-h-[50vh] flex-col items-center justify-center px-6 py-16 text-center">
         <h1 className="text-2xl font-extrabold tracking-tight text-heading">Admin access only</h1>
         <p className="mx-auto mt-2 max-w-md text-sm text-muted">User management is available to administrators only.</p>
-        <Link href="/dashboard" className="mt-6 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Back to your dashboard</Link>
+        <Link href="/dashboard" className="mt-6 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Back to your dashboard</Link>
       </section>
     );
   }
@@ -753,7 +753,7 @@ export default function AdminUsers() {
               id="admin-user-role-filter"
               value={roleFilter}
               onChange={(event) => { setState({ phase: "loading" }); setRoleFilter(event.target.value as RoleFilter); setPage(1); }}
-              className="mt-1.5 h-11 w-full rounded-lg border border-border-strong bg-surface px-4 text-sm font-medium text-foreground outline-none transition-colors duration-200 hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25"
+              className="mt-1.5 h-11 w-full rounded-lg border border-border-strong bg-surface px-4 text-sm font-medium text-foreground outline-none transition-colors duration-200 hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25 cursor-pointer"
             >
               <option value="all">All roles</option>
               <option value="customer">Customer</option>
@@ -769,7 +769,7 @@ export default function AdminUsers() {
               type="button"
               onClick={() => { setTransferError(null); setTransferOpen(true); }}
               disabled={isLoading}
-              className="inline-flex h-11 items-center gap-2 rounded-lg border border-warning/40 bg-warning-soft/40 px-4 text-xs font-semibold text-warning transition-colors duration-200 hover:border-warning/60 hover:bg-warning-soft disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-11 items-center gap-2 rounded-lg border border-warning/40 bg-warning-soft/40 px-4 text-xs font-semibold text-warning transition-colors duration-200 enabled:hover:border-warning/60 enabled:hover:bg-warning-soft disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:bg-warning-soft"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-4 w-4">
                 <path d="M12 2 4 6v6c0 5 3.4 9.7 8 10 4.6-.3 8-5 8-10V6l-8-4Z" />
@@ -783,7 +783,7 @@ export default function AdminUsers() {
             onClick={() => { setState({ phase: "loading" }); setReloadToken((token) => token + 1); }}
             disabled={isLoading}
             aria-label="Refresh users"
-            className="flex h-11 w-11 items-center justify-center rounded-lg border border-border text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-11 w-11 items-center justify-center rounded-lg border border-border text-muted transition-colors duration-200 enabled:hover:bg-surface-muted enabled:hover:text-heading disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:scale-95"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`h-5 w-5 ${isLoading ? "animate-spin motion-reduce:animate-none" : ""}`}><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6" /></svg>
           </button>
@@ -798,9 +798,9 @@ export default function AdminUsers() {
             <p className="mx-auto mt-1.5 max-w-md text-sm text-muted">{state.error.message}</p>
             <div className="mt-5 flex justify-center gap-3">
               {state.error.kind === "unauthorized" ? (
-                <Link href="/sign-in" className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Sign in again</Link>
+                <Link href="/sign-in" className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Sign in again</Link>
               ) : (
-                <button type="button" onClick={() => { setState({ phase: "loading" }); setReloadToken((token) => token + 1); }} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Try again</button>
+                <button type="button" onClick={() => { setState({ phase: "loading" }); setReloadToken((token) => token + 1); }} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Try again</button>
               )}
             </div>
           </div>
@@ -864,7 +864,7 @@ export default function AdminUsers() {
                                 type="button"
                                 onClick={(event) => openDialog(item, "technician", event.currentTarget)}
                                 disabled={pendingUserId !== null}
-                                className="rounded-full border border-accent-500/40 px-3 py-1.5 text-[11px] font-semibold text-accent-strong transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent"
+                                className="rounded-full border border-accent-500/40 px-3 py-1.5 text-[11px] font-semibold text-accent-strong transition-colors duration-200 enabled:hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent cursor-pointer active:scale-[0.98]"
                               >
                                 Make technician
                               </button>
@@ -874,7 +874,7 @@ export default function AdminUsers() {
                                 type="button"
                                 onClick={(event) => openDialog(item, "customer", event.currentTarget)}
                                 disabled={pendingUserId !== null}
-                                className="rounded-full border border-accent-500/40 px-3 py-1.5 text-[11px] font-semibold text-accent-strong transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent"
+                                className="rounded-full border border-accent-500/40 px-3 py-1.5 text-[11px] font-semibold text-accent-strong transition-colors duration-200 enabled:hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent cursor-pointer active:scale-[0.98]"
                               >
                                 Make customer
                               </button>
@@ -884,7 +884,7 @@ export default function AdminUsers() {
                                 type="button"
                                 onClick={(event) => openDialog(item, "admin", event.currentTarget)}
                                 disabled={pendingUserId !== null}
-                                className="rounded-full border border-warning/40 bg-warning-soft/40 px-3 py-1.5 text-[11px] font-semibold text-warning transition-colors duration-200 hover:border-warning/60 hover:bg-warning-soft disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-full border border-warning/40 bg-warning-soft/40 px-3 py-1.5 text-[11px] font-semibold text-warning transition-colors duration-200 enabled:hover:border-warning/60 enabled:hover:bg-warning-soft disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:scale-[0.98]"
                               >
                                 Make admin
                               </button>
@@ -895,7 +895,7 @@ export default function AdminUsers() {
                                   type="button"
                                   onClick={(event) => openDialog(item, "customer", event.currentTarget)}
                                   disabled={pendingUserId !== null}
-                                  className="rounded-full border border-error/40 bg-error-soft/30 px-3 py-1.5 text-[11px] font-semibold text-error transition-colors duration-200 hover:border-error/60 hover:bg-error-soft disabled:cursor-not-allowed disabled:opacity-60"
+                                  className="rounded-full border border-error/40 bg-error-soft/30 px-3 py-1.5 text-[11px] font-semibold text-error transition-colors duration-200 enabled:hover:border-error/60 enabled:hover:bg-error-soft disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:scale-[0.98]"
                                 >
                                   Demote to customer
                                 </button>
@@ -903,7 +903,7 @@ export default function AdminUsers() {
                                   type="button"
                                   onClick={(event) => openDialog(item, "technician", event.currentTarget)}
                                   disabled={pendingUserId !== null}
-                                  className="rounded-full border border-error/40 bg-error-soft/30 px-3 py-1.5 text-[11px] font-semibold text-error transition-colors duration-200 hover:border-error/60 hover:bg-error-soft disabled:cursor-not-allowed disabled:opacity-60"
+                                  className="rounded-full border border-error/40 bg-error-soft/30 px-3 py-1.5 text-[11px] font-semibold text-error transition-colors duration-200 enabled:hover:border-error/60 enabled:hover:bg-error-soft disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:scale-[0.98]"
                                 >
                                   Demote to technician
                                 </button>
@@ -918,9 +918,9 @@ export default function AdminUsers() {
               })}
             </ul>
             <nav aria-label="Users pagination" className="mt-6 flex items-center justify-between gap-3 border-t border-border pt-5">
-              <button type="button" onClick={() => { setState({ phase: "loading" }); setPage(Math.max(1, state.data.pagination.currentPage - 1)); }} disabled={!state.data.pagination.hasPrevPage || isLoading} className="rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50">Previous</button>
+              <button type="button" onClick={() => { setState({ phase: "loading" }); setPage(Math.max(1, state.data.pagination.currentPage - 1)); }} disabled={!state.data.pagination.hasPrevPage || isLoading} className="rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:bg-surface-muted">Previous</button>
               <p className="text-xs font-medium tabular-nums text-muted">Page <span className="font-semibold text-heading">{state.data.pagination.currentPage}</span> of <span className="font-semibold text-heading">{Math.max(state.data.pagination.totalPages, 1)}</span></p>
-              <button type="button" onClick={() => { setState({ phase: "loading" }); setPage(state.data.pagination.currentPage + 1); }} disabled={!state.data.pagination.hasNextPage || isLoading} className="rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50">Next</button>
+              <button type="button" onClick={() => { setState({ phase: "loading" }); setPage(state.data.pagination.currentPage + 1); }} disabled={!state.data.pagination.hasNextPage || isLoading} className="rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:bg-surface-muted">Next</button>
             </nav>
           </>
         )}

@@ -352,7 +352,7 @@ function DetailsErrorPanel({ error, onRetry }: { error: DetailsError; onRetry: (
       <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
         <Link
           href="/services"
-          className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted"
+          className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted active:scale-[0.98] active:bg-surface-muted cursor-pointer"
         >
           Browse services
         </Link>
@@ -360,7 +360,7 @@ function DetailsErrorPanel({ error, onRetry }: { error: DetailsError; onRetry: (
           <button
             type="button"
             onClick={onRetry}
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:scale-[0.98] active:bg-primary-hover cursor-pointer"
           >
             Try again
           </button>
@@ -374,7 +374,7 @@ function BackLink() {
   return (
     <Link
       href="/services"
-      className="inline-flex items-center gap-2 text-xs font-semibold text-accent-strong transition-colors duration-200 hover:text-accent-600 dark:text-accent"
+      className="inline-flex items-center gap-2 text-xs font-semibold text-accent-strong transition-colors duration-200 hover:text-accent-600 dark:text-accent dark:hover:text-accent-400 cursor-pointer"
     >
       <svg
         viewBox="0 0 24 24"
@@ -471,7 +471,7 @@ function BookingPanel({ service }: { service: PublicServiceDetails }) {
         </p>
         <Link
           href="/dashboard/bookings"
-          className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+          className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:scale-[0.98] active:bg-primary-hover cursor-pointer"
         >
           Go to My Bookings
           <svg
@@ -510,7 +510,7 @@ function BookingPanel({ service }: { service: PublicServiceDetails }) {
         </p>
         <Link
           href={signInHref}
-          className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+          className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:scale-[0.98] active:bg-primary-hover cursor-pointer"
         >
           Sign in to book
           <svg
@@ -599,7 +599,7 @@ function BookingPanel({ service }: { service: PublicServiceDetails }) {
             aria-invalid={Boolean(fieldError) || undefined}
             aria-describedby={fieldError ? "booking-problem-error" : "booking-problem-helper"}
             placeholder="Describe the issue, the device model and anything else the technician should know…"
-            className="mt-1.5 w-full resize-y rounded-xl border border-border-strong bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted shadow-xs outline-none transition-colors duration-200 hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25 aria-[invalid=true]:border-error/60"
+            className="mt-1.5 w-full resize-y rounded-xl border border-border-strong bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted shadow-xs outline-none transition-colors duration-200 enabled:hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25 aria-[invalid=true]:border-error/60 disabled:cursor-not-allowed disabled:opacity-60"
           />
           {fieldError ? (
             <p id="booking-problem-error" role="alert" className="mt-1.5 text-[11px] font-medium text-error">
@@ -616,7 +616,7 @@ function BookingPanel({ service }: { service: PublicServiceDetails }) {
           type="submit"
           disabled={submitting}
           aria-live="polite"
-          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent-500 px-6 py-3 text-sm font-semibold text-[#04121f] shadow-glow transition-all duration-200 hover:bg-accent-400 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent-500 px-6 py-3 text-sm font-semibold text-[#04121f] shadow-glow transition-all duration-200 enabled:hover:bg-accent-400 enabled:active:scale-[0.98] enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           {submitting ? (
             <>

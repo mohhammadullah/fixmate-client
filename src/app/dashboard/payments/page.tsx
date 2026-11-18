@@ -62,7 +62,7 @@ function AccessDenied({ role }: { role: "technician" | "admin" | null }) {
       </p>
       <Link
         href="/dashboard"
-        className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+        className="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:scale-[0.98] active:bg-primary-hover"
       >
         <svg
           viewBox="0 0 24 24"

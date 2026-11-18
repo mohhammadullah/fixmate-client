@@ -301,10 +301,10 @@ function SidebarContent({
                   href={item.href}
                   aria-current={active ? "page" : undefined}
                   onClick={onNavigate}
-                  className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
+                  className={`group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
                     active
                       ? "bg-accent-50 text-accent-strong ring-1 ring-inset ring-accent-500/30 dark:bg-accent-400/10 dark:text-accent dark:ring-accent-400/25"
-                      : "text-foreground hover:bg-surface-muted hover:text-heading"
+                      : "text-foreground hover:bg-surface-muted hover:text-heading active:bg-surface-muted active:text-heading"
                   }`}
                 >
                   <Icon
@@ -385,9 +385,9 @@ export default function DashboardSidebar({
       {/* Mobile / tablet — drawer + overlay */}
       {open && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <button
-            type="button"
-            aria-label="Close sidebar"
+          {/* Backdrop — click to dismiss (keyboard users use Escape or the visible close button) */}
+          <div
+            aria-hidden="true"
             onClick={onClose}
             className="absolute inset-0 h-full w-full cursor-default bg-navy-950/70 backdrop-blur-sm"
           />
@@ -404,7 +404,7 @@ export default function DashboardSidebar({
                 type="button"
                 onClick={onClose}
                 aria-label="Close sidebar"
-                className="flex h-11 w-11 items-center justify-center rounded-lg text-heading transition-colors duration-200 hover:bg-surface-muted"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-heading transition-all duration-200 hover:bg-surface-muted active:scale-95 active:bg-surface-muted"
               >
                 <svg
                   viewBox="0 0 24 24"

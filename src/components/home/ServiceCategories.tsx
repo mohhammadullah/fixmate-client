@@ -131,7 +131,7 @@ export default function ServiceCategories() {
                 <Link
                   href={`/services?category=${encodeURIComponent(category.name)}`}
                   aria-label={`Explore ${category.name} services`}
-                  className="mt-auto inline-flex w-fit items-center gap-2 pt-5 text-sm font-semibold text-accent-strong transition-colors duration-200 hover:text-accent-600 dark:text-accent dark:hover:text-accent-400"
+                  className="mt-auto inline-flex w-fit items-center gap-2 pt-5 text-sm font-semibold text-accent-strong transition-colors duration-200 hover:text-accent-600 dark:text-accent dark:hover:text-accent-400 cursor-pointer"
                 >
                   Explore
                   <svg

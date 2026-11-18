@@ -137,7 +137,7 @@ export default function AboutPage() {
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link
                   href="/services"
-                  className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+                  className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:scale-[0.98] active:bg-primary-hover cursor-pointer"
                 >
                   Explore Services
                   <svg
@@ -157,7 +157,7 @@ export default function AboutPage() {
                 </Link>
                 <Link
                   href="/sign-up"
-                  className="inline-flex items-center gap-2 rounded-full border border-border-strong bg-surface px-6 py-3 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted"
+                  className="inline-flex items-center gap-2 rounded-full border border-border-strong bg-surface px-6 py-3 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted active:scale-[0.98] active:bg-surface-muted cursor-pointer"
                 >
                   Get Started
                   <svg
@@ -418,7 +418,7 @@ export default function AboutPage() {
               <div className="flex shrink-0 flex-wrap items-center gap-3">
                 <Link
                   href="/services"
-                  className="inline-flex items-center gap-2 rounded-full bg-accent-500 px-6 py-3 text-sm font-semibold text-[#04121f] shadow-glow transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent-400"
+                  className="inline-flex items-center gap-2 rounded-full bg-accent-500 px-6 py-3 text-sm font-semibold text-[#04121f] shadow-glow transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent-400 active:scale-[0.98] active:bg-accent-400 cursor-pointer"
                 >
                   Explore Services
                   <svg
@@ -438,7 +438,7 @@ export default function AboutPage() {
                 </Link>
                 <Link
                   href="/sign-up"
-                  className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-[#e6eef8] backdrop-blur-sm transition-colors duration-200 hover:border-accent-400/40 hover:bg-white/10 hover:text-white"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-[#e6eef8] backdrop-blur-sm transition-colors duration-200 hover:border-accent-400/40 hover:bg-white/10 hover:text-white active:scale-[0.98] active:bg-white/10 cursor-pointer"
                 >
                   Get Started
                 </Link>

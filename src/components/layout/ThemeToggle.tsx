@@ -116,7 +116,7 @@ export default function ThemeToggle() {
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       aria-pressed={isDark}
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-heading transition-colors duration-200 hover:bg-surface-muted"
+      className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-heading transition-all duration-200 hover:bg-surface-muted hover:text-heading active:scale-90 active:bg-surface-muted"
     >
       {isDark ? (
         // Sun — click to switch to light

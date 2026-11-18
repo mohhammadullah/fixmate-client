@@ -144,7 +144,7 @@ export default function DashboardHeader({
           aria-expanded={sidebarOpen}
           aria-controls="dashboard-sidebar"
           aria-label={sidebarOpen ? "Close dashboard navigation" : "Open dashboard navigation"}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-heading transition-colors duration-200 hover:bg-surface-muted lg:hidden"
+          className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-heading transition-all duration-200 hover:bg-surface-muted active:scale-95 active:bg-surface-muted lg:hidden"
         >
           <svg
             viewBox="0 0 24 24"
@@ -198,7 +198,7 @@ export default function DashboardHeader({
             disabled={isSigningOut}
             aria-busy={isSigningOut}
             aria-label={isSigningOut ? "Signing out" : "Sign out"}
-            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full border border-border px-3 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-70 sm:px-4"
+            className="inline-flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full border border-border px-3 text-sm font-semibold text-heading transition-all duration-200 enabled:hover:bg-surface-muted enabled:active:scale-[0.98] enabled:active:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-70 sm:px-4"
           >
             {isSigningOut ? (
               <>
@@ -239,7 +239,7 @@ export default function DashboardHeader({
                 type="button"
                 onClick={() => setSignOutError(null)}
                 aria-label="Dismiss sign-out error"
-                className="rounded-md p-1 transition-colors duration-200 hover:bg-error/10"
+                className="cursor-pointer rounded-md p-1 transition-all duration-200 hover:bg-error/10 active:scale-90 active:bg-error/20"
               >
                 <svg
                   viewBox="0 0 24 24"

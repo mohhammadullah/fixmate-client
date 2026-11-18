@@ -166,7 +166,7 @@ export default function SearchSection() {
 
             <button
               type="submit"
-              className="flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md md:col-span-2 lg:col-span-3"
+              className="flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:scale-[0.98] active:bg-primary-hover cursor-pointer md:col-span-2 lg:col-span-3"
             >
               <svg
                 viewBox="0 0 24 24"

@@ -237,7 +237,7 @@ export default function ServiceImageUpload({
         htmlFor={id}
         className={`flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-5 text-center transition-colors duration-200 ${
           dragActive ? "border-accent-500 bg-accent-50/60 dark:bg-accent-400/10" : "border-border-strong bg-background"
-        } ${busy ? "cursor-not-allowed opacity-70" : "cursor-pointer hover:border-accent-500"}`}
+        } ${busy ? "cursor-not-allowed opacity-70" : "cursor-pointer hover:border-accent-500 hover:bg-surface-muted"}`}
         onDragEnter={(event) => { event.preventDefault(); if (!busy) setDragActive(true); }}
         onDragOver={(event) => { event.preventDefault(); if (!busy) setDragActive(true); }}
         onDragLeave={(event) => { event.preventDefault(); setDragActive(false); }}
@@ -297,7 +297,7 @@ export default function ServiceImageUpload({
                 type="button"
                 onClick={cancelSelection}
                 disabled={uploading}
-                className="rounded-full border border-border px-3 py-1.5 text-[11px] font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-full border border-border px-3 py-1.5 text-[11px] font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted cursor-pointer enabled:active:bg-surface-muted enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -305,7 +305,7 @@ export default function ServiceImageUpload({
                 type="button"
                 onClick={() => void startUpload()}
                 disabled={busy}
-                className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground shadow-sm transition-all duration-200 enabled:hover:bg-primary-hover enabled:hover:shadow-md cursor-pointer enabled:active:bg-primary-hover enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {uploading ? "Uploading…" : "Upload image"}
               </button>
@@ -315,7 +315,7 @@ export default function ServiceImageUpload({
               type="button"
               onClick={handleRemove}
               disabled={busy}
-              className="shrink-0 rounded-full border border-error/40 px-3 py-1.5 text-[11px] font-semibold text-error transition-colors duration-200 hover:bg-error-soft disabled:cursor-not-allowed disabled:opacity-60"
+              className="shrink-0 rounded-full border border-error/40 px-3 py-1.5 text-[11px] font-semibold text-error transition-colors duration-200 enabled:hover:bg-error-soft cursor-pointer enabled:active:bg-error-soft disabled:cursor-not-allowed disabled:opacity-60"
             >
               Remove
             </button>

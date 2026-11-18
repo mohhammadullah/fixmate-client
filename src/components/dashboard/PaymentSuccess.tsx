@@ -251,10 +251,10 @@ export default function PaymentSuccess({
           Stripe — check your payment history or booking details to see its real status.
         </p>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-          <Link href="/dashboard/bookings" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md">
+          <Link href="/dashboard/bookings" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]">
             Go to My Bookings
           </Link>
-          <Link href="/dashboard/payments" className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted">
+          <Link href="/dashboard/payments" className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted cursor-pointer active:bg-surface-muted">
             Payment history
           </Link>
         </div>
@@ -299,11 +299,11 @@ export default function PaymentSuccess({
         </p>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
           {unauthorized ? (
-            <Link href="/sign-in" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md">
+            <Link href="/sign-in" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]">
               Sign in again
             </Link>
           ) : (
-            <Link href="/dashboard/payments" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md">
+            <Link href="/dashboard/payments" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]">
               Payment history
             </Link>
           )}
@@ -324,19 +324,19 @@ export default function PaymentSuccess({
             Stripe processed the transaction and is notifying FixMate securely. This page
             couldn&apos;t see the confirmation yet — but nothing is marked paid until our
             server verifies the webhook from Stripe, so it may take a moment. No need to
-            pay again; you can check your <Link href="/dashboard/payments" className="font-semibold text-heading underline decoration-border-strong underline-offset-4 hover:text-accent-strong dark:hover:text-accent">payment history</Link> or{" "}
-            <Link href={`/dashboard/bookings/${bookingId}`} className="font-semibold text-heading underline decoration-border-strong underline-offset-4 hover:text-accent-strong dark:hover:text-accent">booking details</Link> anytime.
+            pay again; you can check your <Link href="/dashboard/payments" className="font-semibold text-heading underline decoration-border-strong underline-offset-4 hover:text-accent-strong dark:hover:text-accent cursor-pointer">payment history</Link> or{" "}
+            <Link href={`/dashboard/bookings/${bookingId}`} className="font-semibold text-heading underline decoration-border-strong underline-offset-4 hover:text-accent-strong dark:hover:text-accent cursor-pointer">booking details</Link> anytime.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]"
           >
             Check again
           </button>
-          <Link href="/dashboard/payments" className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted">
+          <Link href="/dashboard/payments" className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted cursor-pointer active:bg-surface-muted">
             Payment history
           </Link>
         </div>
@@ -362,10 +362,10 @@ export default function PaymentSuccess({
         </p>
       </div>
       <div className="flex flex-wrap gap-3">
-        <Link href={`/dashboard/bookings/${bookingId}`} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md">
+        <Link href={`/dashboard/bookings/${bookingId}`} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]">
           View booking
         </Link>
-        <Link href="/dashboard/payments" className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted">
+        <Link href="/dashboard/payments" className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted cursor-pointer active:bg-surface-muted">
           Payment history
         </Link>
       </div>

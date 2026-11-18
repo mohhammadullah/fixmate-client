@@ -47,7 +47,7 @@ const CONTACT = [
 ] as const;
 
 const linkClass =
-  "inline-flex w-fit rounded-sm text-sm text-muted transition-colors duration-200 hover:text-heading";
+  "inline-flex w-fit cursor-pointer rounded-sm text-sm text-muted transition-colors duration-200 hover:text-heading hover:underline hover:underline-offset-4 active:text-accent-strong dark:active:text-accent";
 
 export default async function Footer() {
   "use cache";
@@ -61,7 +61,7 @@ export default async function Footer() {
             <Link
               href="/"
               aria-label="FixMate — home"
-              className="inline-flex items-center gap-2.5 rounded-lg"
+              className="inline-flex cursor-pointer items-center gap-2.5 rounded-lg transition-opacity duration-200 hover:opacity-80 active:opacity-60"
             >
               <span
                 aria-hidden="true"

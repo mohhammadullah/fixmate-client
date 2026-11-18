@@ -291,7 +291,7 @@ function RejectDialog({
             </div>
             <h2 id="reject-application-title" className="text-base font-bold leading-snug text-heading">Reject application?</h2>
           </div>
-          <button type="button" onClick={onDismiss} disabled={pending} aria-label="Close dialog" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading disabled:cursor-not-allowed disabled:opacity-50">
+          <button type="button" onClick={onDismiss} disabled={pending} aria-label="Close dialog" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted transition-colors duration-200 enabled:hover:bg-surface-muted enabled:hover:text-heading disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:scale-95">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-5 w-5"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>
         </div>
@@ -324,8 +324,8 @@ function RejectDialog({
             {error && <div role="alert" className="mt-4 rounded-xl border border-error/40 bg-error-soft/60 px-4 py-3 text-xs leading-relaxed text-error">{error}</div>}
           </div>
           <div className="flex flex-col-reverse gap-2 border-t border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
-            <button type="button" onClick={onDismiss} disabled={pending} className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60">Cancel</button>
-            <button type="submit" disabled={pending} aria-live="polite" className="inline-flex items-center justify-center gap-2 rounded-full bg-error px-5 py-2.5 text-sm font-semibold text-background shadow-sm transition-all duration-200 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70">
+            <button type="button" onClick={onDismiss} disabled={pending} className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:bg-surface-muted">Cancel</button>
+            <button type="submit" disabled={pending} aria-live="polite" className="inline-flex items-center justify-center gap-2 rounded-full bg-error px-5 py-2.5 text-sm font-semibold text-background shadow-sm transition-all duration-200 enabled:hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer active:scale-[0.98]">
               {pending ? "Rejecting…" : "Confirm rejection"}
             </button>
           </div>
@@ -356,7 +356,7 @@ function AccessDenied({ role }: { role: "customer" | "technician" | null }) {
         {label ? `You're signed in with a ${label} account.` : "Your account role isn't recognized."}{" "}
         Application reviews are available to admins only.
       </p>
-      <Link href="/dashboard" className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Back to your dashboard</Link>
+      <Link href="/dashboard" className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Back to your dashboard</Link>
     </section>
   );
 }
@@ -415,7 +415,7 @@ function ApplicationCard({
             type="button"
             onClick={(event) => onReject(application, event.currentTarget)}
             disabled={busy}
-            className="inline-flex items-center gap-2 rounded-full border border-error/40 bg-error-soft/50 px-4 py-2 text-xs font-semibold text-error transition-colors duration-200 hover:bg-error-soft disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-full border border-error/40 bg-error-soft/50 px-4 py-2 text-xs font-semibold text-error transition-colors duration-200 enabled:hover:bg-error-soft disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:scale-[0.98]"
           >
             {pendingAction === "reject" ? "Rejecting…" : "Reject"}
           </button>
@@ -423,7 +423,7 @@ function ApplicationCard({
             type="button"
             onClick={(event) => onApprove(application, event.currentTarget)}
             disabled={busy}
-            className="inline-flex items-center gap-2 rounded-full bg-success px-4 py-2 text-xs font-semibold text-background shadow-sm transition-all duration-200 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-full bg-success px-4 py-2 text-xs font-semibold text-background shadow-sm transition-all duration-200 enabled:hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:scale-[0.98]"
           >
             {pendingAction === "approve" ? "Approving…" : "Approve"}
           </button>
@@ -589,7 +589,7 @@ export default function AdminTechnicianApplications() {
               id="application-status-filter"
               value={status}
               onChange={(event) => { beginLoading(); setStatus(event.target.value as StatusFilter); setPage(1); }}
-              className="w-full appearance-none rounded-lg border border-border-strong bg-surface py-2.5 pl-4 pr-10 text-sm font-medium text-foreground shadow-xs outline-none transition-colors duration-200 hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25"
+              className="w-full appearance-none rounded-lg border border-border-strong bg-surface py-2.5 pl-4 pr-10 text-sm font-medium text-foreground shadow-xs outline-none transition-colors duration-200 hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25 cursor-pointer"
             >
               <option value="pending">Pending</option>
               <option value="approved">Approved</option>
@@ -601,7 +601,7 @@ export default function AdminTechnicianApplications() {
         </div>
         <div className="flex items-center gap-3">
           {totalItems !== null && <p aria-live="polite" className="text-xs font-medium tabular-nums text-muted sm:text-sm">{totalItems} application{totalItems === 1 ? "" : "s"}</p>}
-          <button type="button" onClick={() => { beginLoading(); setReloadToken((token) => token + 1); }} disabled={isLoading} aria-label="Refresh applications" className="flex h-11 w-11 items-center justify-center rounded-lg border border-border text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading disabled:cursor-not-allowed disabled:opacity-60">
+          <button type="button" onClick={() => { beginLoading(); setReloadToken((token) => token + 1); }} disabled={isLoading} aria-label="Refresh applications" className="flex h-11 w-11 items-center justify-center rounded-lg border border-border text-muted transition-colors duration-200 enabled:hover:bg-surface-muted enabled:hover:text-heading disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:scale-95">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`h-5 w-5 ${isLoading ? "animate-spin motion-reduce:animate-none" : ""}`}><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6" /></svg>
           </button>
         </div>
@@ -611,9 +611,9 @@ export default function AdminTechnicianApplications() {
         <div role={notice.kind === "success" ? "status" : "alert"} className={`mt-4 flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${notice.kind === "success" ? "border-success/40 bg-success-soft/60 text-success" : "border-error/40 bg-error-soft/60 text-error"}`}>
           <p className="min-w-0 flex-1 font-medium leading-relaxed">{notice.message}</p>
           {notice.showRefresh && (
-            <button type="button" onClick={() => { setNotice(null); beginLoading(); setReloadToken((token) => token + 1); }} className="shrink-0 rounded-full border border-error/40 bg-surface px-3 py-1.5 text-xs font-semibold text-error hover:bg-error-soft">Refresh</button>
+            <button type="button" onClick={() => { setNotice(null); beginLoading(); setReloadToken((token) => token + 1); }} className="shrink-0 rounded-full border border-error/40 bg-surface px-3 py-1.5 text-xs font-semibold text-error hover:bg-error-soft cursor-pointer transition-colors duration-200 active:scale-[0.98]">Refresh</button>
           )}
-          <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss message" className="shrink-0 text-xs font-semibold">✕</button>
+          <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss message" className="shrink-0 text-xs font-semibold cursor-pointer rounded-md px-1 transition-colors duration-200 hover:bg-surface-muted hover:text-heading active:scale-90">✕</button>
         </div>
       )}
 
@@ -625,9 +625,9 @@ export default function AdminTechnicianApplications() {
             <p className="mx-auto mt-1.5 max-w-md text-sm text-muted">{state.error.message}</p>
             <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
               {state.error.kind === "unauthorized" ? (
-                <Link href="/sign-in" className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Sign in again</Link>
+                <Link href="/sign-in" className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Sign in again</Link>
               ) : (
-                <button type="button" onClick={() => { beginLoading(); setReloadToken((token) => token + 1); }} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Try again</button>
+                <button type="button" onClick={() => { beginLoading(); setReloadToken((token) => token + 1); }} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Try again</button>
               )}
             </div>
           </div>
@@ -654,9 +654,9 @@ export default function AdminTechnicianApplications() {
               ))}
             </ul>
             <nav aria-label="Applications pagination" className="mt-6 flex items-center justify-between gap-3 border-t border-border pt-5">
-              <button type="button" onClick={() => { beginLoading(); setPage(Math.max(1, state.data.pagination.currentPage - 1)); }} disabled={!state.data.pagination.hasPrevPage || isLoading} className="rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50">Previous</button>
+              <button type="button" onClick={() => { beginLoading(); setPage(Math.max(1, state.data.pagination.currentPage - 1)); }} disabled={!state.data.pagination.hasPrevPage || isLoading} className="rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:bg-surface-muted">Previous</button>
               <p className="text-xs font-medium tabular-nums text-muted">Page <span className="font-semibold text-heading">{state.data.pagination.currentPage}</span> of <span className="font-semibold text-heading">{Math.max(state.data.pagination.totalPages, 1)}</span></p>
-              <button type="button" onClick={() => { beginLoading(); setPage(state.data.pagination.currentPage + 1); }} disabled={!state.data.pagination.hasNextPage || isLoading} className="rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50">Next</button>
+              <button type="button" onClick={() => { beginLoading(); setPage(state.data.pagination.currentPage + 1); }} disabled={!state.data.pagination.hasNextPage || isLoading} className="rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:bg-surface-muted">Next</button>
             </nav>
           </>
         )}

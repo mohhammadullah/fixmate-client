@@ -350,7 +350,7 @@ function ErrorPanel({
         {unauthorized ? (
           <Link
             href="/sign-in"
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]"
           >
             Sign in again
           </Link>
@@ -358,7 +358,7 @@ function ErrorPanel({
           <button
             type="button"
             onClick={onRetry}
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]"
           >
             Try again
           </button>
@@ -398,7 +398,7 @@ function EmptyState() {
       </p>
       <Link
         href="/dashboard/bookings"
-        className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+        className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]"
       >
         Go to My Bookings
         <svg
@@ -460,7 +460,7 @@ function PaymentRow({ payment }: { payment: CustomerPayment }) {
         <div className="shrink-0">
           <Link
             href={`/dashboard/bookings/${encodeURIComponent(payment.bookingId)}`}
-            className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-heading transition-colors duration-200 hover:border-accent-500/40 hover:bg-surface-muted"
+            className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-heading transition-colors duration-200 hover:border-accent-500/40 hover:bg-surface-muted cursor-pointer active:bg-surface-muted"
           >
             View booking
             <svg
@@ -567,7 +567,7 @@ export default function PaymentHistory() {
             onClick={reload}
             disabled={isLoading}
             aria-label="Refresh payments"
-            className="flex h-11 w-11 items-center justify-center rounded-lg border border-border text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-11 w-11 items-center justify-center rounded-lg border border-border text-muted transition-colors duration-200 enabled:hover:bg-surface-muted enabled:hover:text-heading enabled:active:scale-95 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
           >
             <svg
               viewBox="0 0 24 24"
@@ -610,7 +610,7 @@ export default function PaymentHistory() {
                 type="button"
                 onClick={() => goToPage(Math.max(1, state.data.pagination.currentPage - 1))}
                 disabled={!state.data.pagination.hasPrevPage || isLoading}
-                className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted enabled:active:bg-surface-muted cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -640,7 +640,7 @@ export default function PaymentHistory() {
                 type="button"
                 onClick={() => goToPage(state.data.pagination.currentPage + 1)}
                 disabled={!state.data.pagination.hasNextPage || isLoading}
-                className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted enabled:active:bg-surface-muted cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span className="hidden sm:inline">Next</span>
                 <svg

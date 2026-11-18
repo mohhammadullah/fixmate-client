@@ -133,7 +133,7 @@ function AccessDenied({ role }: { role: "customer" | "technician" | null }) {
       <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
         {label ? `You're signed in with a ${label} account.` : "Your account role isn't recognized."} The admin overview is available to administrators only.
       </p>
-      <Link href="/dashboard" className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Back to your dashboard</Link>
+      <Link href="/dashboard" className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Back to your dashboard</Link>
     </section>
   );
 }
@@ -239,9 +239,9 @@ export default function AdminDashboard() {
         <p className="mx-auto mt-1.5 max-w-md text-sm text-muted">{state.error.message}</p>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
           {unauthorized ? (
-            <Link href="/sign-in" className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Sign in again</Link>
+            <Link href="/sign-in" className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Sign in again</Link>
           ) : (
-            <button type="button" onClick={() => { setState({ phase: "loading" }); setReloadToken((token) => token + 1); }} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Try again</button>
+            <button type="button" onClick={() => { setState({ phase: "loading" }); setReloadToken((token) => token + 1); }} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Try again</button>
           )}
         </div>
       </div>
@@ -269,7 +269,7 @@ export default function AdminDashboard() {
           <button
             type="button"
             onClick={() => { setState({ phase: "loading" }); setReloadToken((token) => token + 1); }}
-            className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted"
+            className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted cursor-pointer active:bg-surface-muted"
           >
             Refresh
           </button>
@@ -298,7 +298,7 @@ export default function AdminDashboard() {
         <ul className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {QUICK_LINKS.map((link) => (
             <li key={link.href}>
-              <Link href={link.href} className="group flex h-full flex-col rounded-2xl border border-border bg-surface p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-500/40 hover:shadow-md">
+              <Link href={link.href} className="group flex h-full flex-col rounded-2xl border border-border bg-surface p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-500/40 hover:shadow-md cursor-pointer active:scale-[0.98]">
                 <span aria-hidden="true" className="flex h-10 w-10 items-center justify-center rounded-xl border border-accent-100 bg-accent-50 text-accent-strong dark:border-border dark:bg-surface-muted dark:text-accent">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">{link.icon}</svg>
                 </span>
@@ -319,7 +319,7 @@ export default function AdminDashboard() {
               is reconciled on the Payments page.
             </p>
           </div>
-          <Link href="/dashboard/admin/payments" className="inline-flex shrink-0 items-center gap-2 rounded-full border border-accent-500/40 px-5 py-2.5 text-xs font-semibold text-accent-strong transition-colors duration-200 hover:bg-surface-muted dark:text-accent">
+          <Link href="/dashboard/admin/payments" className="inline-flex shrink-0 items-center gap-2 rounded-full border border-accent-500/40 px-5 py-2.5 text-xs font-semibold text-accent-strong transition-colors duration-200 hover:bg-surface-muted dark:text-accent cursor-pointer active:bg-surface-muted">
             Open Payments
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-4 w-4">
               <path d="M5 12h14M13 6l6 6-6 6" />

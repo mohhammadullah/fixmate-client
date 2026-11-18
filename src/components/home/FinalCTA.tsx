@@ -89,7 +89,7 @@ export default function FinalCTA() {
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
               <Link
                 href="/sign-up"
-                className="inline-flex items-center gap-2 rounded-full bg-accent-500 px-7 py-3.5 text-sm font-semibold text-[#04121f] shadow-glow transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent-400"
+                className="inline-flex items-center gap-2 rounded-full bg-accent-500 px-7 py-3.5 text-sm font-semibold text-[#04121f] shadow-glow transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent-400 active:scale-[0.98] cursor-pointer"
               >
                 Get Started
                 <svg
@@ -109,7 +109,7 @@ export default function FinalCTA() {
               </Link>
               <Link
                 href="/services"
-                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-7 py-3.5 text-sm font-semibold text-[#e6eef8] backdrop-blur-sm transition-colors duration-200 hover:border-accent-400/40 hover:bg-white/10 hover:text-white"
+                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-7 py-3.5 text-sm font-semibold text-[#e6eef8] backdrop-blur-sm transition-colors duration-200 hover:border-accent-400/40 hover:bg-white/10 hover:text-white active:bg-white/10 active:scale-[0.98] cursor-pointer"
               >
                 Explore Services
                 <svg

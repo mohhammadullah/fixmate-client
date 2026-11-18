@@ -317,9 +317,9 @@ function validateAmenity(candidate: string, existing: string[]): string | null {
 
 
 const inputBase =
-  "w-full rounded-lg border border-border-strong bg-surface px-4 py-2.5 text-sm text-foreground shadow-xs outline-none transition-colors duration-200 placeholder:text-muted hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25 aria-[invalid=true]:border-error/60 aria-[invalid=true]:bg-error-soft/20";
+  "w-full rounded-lg border border-border-strong bg-surface px-4 py-2.5 text-sm text-foreground shadow-xs outline-none transition-colors duration-200 placeholder:text-muted enabled:hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25 aria-[invalid=true]:border-error/60 aria-[invalid=true]:bg-error-soft/20";
 
-const selectBase = `${inputBase} appearance-none pr-10`;
+const selectBase = `${inputBase} appearance-none pr-10 cursor-pointer disabled:cursor-not-allowed`;
 
 function Field({
   id,
@@ -407,7 +407,7 @@ function AccessDenied({ role }: { role: "customer" | "admin" | null }) {
       </p>
       <Link
         href="/dashboard"
-        className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+        className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]"
       >
         <svg
           viewBox="0 0 24 24"
@@ -453,7 +453,7 @@ function BackToServicesLink({ className = "" }: { className?: string }) {
   return (
     <Link
       href="/dashboard/my-services"
-      className={`inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted ${className}`}
+      className={`inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted cursor-pointer active:bg-surface-muted ${className}`}
     >
       <svg
         viewBox="0 0 24 24"
@@ -690,7 +690,7 @@ export default function AddServiceForm() {
           {unauthorized ? (
             <Link
               href="/sign-in"
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]"
             >
               Sign in again
             </Link>
@@ -730,7 +730,7 @@ export default function AddServiceForm() {
         </p>
         <Link
           href="/dashboard/my-services"
-          className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+          className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]"
         >
           Go to My Services
           <svg
@@ -1036,7 +1036,7 @@ export default function AddServiceForm() {
                         onClick={() => removeAmenity(index)}
                         disabled={busy}
                         aria-label={`Remove amenity ${amenity}`}
-                        className="flex h-5 w-5 items-center justify-center rounded-full text-muted transition-colors duration-200 hover:bg-error-soft hover:text-error disabled:cursor-not-allowed"
+                        className="flex h-5 w-5 items-center justify-center rounded-full text-muted transition-colors duration-200 enabled:hover:bg-error-soft enabled:hover:text-error cursor-pointer enabled:active:scale-90 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <svg
                           viewBox="0 0 24 24"
@@ -1077,7 +1077,7 @@ export default function AddServiceForm() {
                   type="button"
                   onClick={() => addAmenity(amenityDraft)}
                   disabled={busy || amenityDraft.trim().length === 0}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted cursor-pointer enabled:active:bg-surface-muted enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Add
                 </button>
@@ -1095,7 +1095,7 @@ export default function AddServiceForm() {
           <Link
             href="/dashboard/my-services"
             aria-disabled={busy || undefined}
-            className={`inline-flex items-center justify-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted ${
+            className={`inline-flex items-center justify-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted cursor-pointer active:bg-surface-muted ${
               busy ? "pointer-events-none opacity-50" : ""
             }`}
           >
@@ -1105,7 +1105,7 @@ export default function AddServiceForm() {
             type="submit"
             disabled={busy}
             aria-live="polite"
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 enabled:hover:bg-primary-hover enabled:hover:shadow-md cursor-pointer enabled:active:bg-primary-hover enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {busy ? (
               <>

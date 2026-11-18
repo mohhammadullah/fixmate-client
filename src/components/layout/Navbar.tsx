@@ -65,9 +65,9 @@ export default function Navbar() {
     normalizedPathname.startsWith("/dashboard/");
 
   const dashboardLinkBase =
-    "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200";
+    "inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 active:scale-[0.97]";
   const dashboardLinkActive = `${dashboardLinkBase} bg-accent-50 text-accent-strong dark:bg-surface-muted dark:text-accent`;
-  const dashboardLinkInactive = `${dashboardLinkBase} text-muted hover:bg-surface-muted hover:text-heading`;
+  const dashboardLinkInactive = `${dashboardLinkBase} text-muted hover:bg-surface-muted hover:text-heading active:bg-surface-muted active:text-heading`;
 
   // Close the mobile menu whenever the route changes by adjusting state
   // during render (avoids cascading renders from effects).
@@ -97,8 +97,8 @@ export default function Navbar() {
   }
 
   const linkBase =
-    "rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200";
-  const linkInactive = `${linkBase} text-muted hover:bg-surface-muted hover:text-heading`;
+    "cursor-pointer rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 active:scale-[0.97]";
+  const linkInactive = `${linkBase} text-muted hover:bg-surface-muted hover:text-heading active:bg-surface-muted active:text-heading`;
   const linkActive = `${linkBase} bg-accent-50 text-accent-strong dark:bg-surface-muted dark:text-accent`;
 
   return (
@@ -108,7 +108,7 @@ export default function Navbar() {
           <Link
             href="/"
             aria-label="FixMate — home"
-            className="flex shrink-0 items-center gap-2.5 rounded-lg"
+            className="flex shrink-0 items-center gap-2.5 rounded-lg transition-opacity duration-200 hover:opacity-80 active:opacity-60"
           >
             <span
               aria-hidden="true"
@@ -193,13 +193,13 @@ export default function Navbar() {
               <>
                 <Link
                   href="/sign-in"
-                  className="rounded-full px-4 py-2 text-sm font-medium text-muted transition-colors duration-200 hover:text-heading"
+                  className="cursor-pointer rounded-full px-4 py-2 text-sm font-medium text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading active:bg-surface-muted active:text-heading"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/sign-up"
-                  className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+                  className="cursor-pointer rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:scale-[0.98] active:bg-primary-hover"
                 >
                   Get Started
                 </Link>
@@ -216,7 +216,7 @@ export default function Navbar() {
             aria-expanded={isMenuOpen}
             aria-controls="mobile-menu"
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-heading transition-colors duration-200 hover:bg-surface-muted"
+            className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-heading transition-all duration-200 hover:bg-surface-muted active:scale-95 active:bg-surface-muted"
           >
             {isMenuOpen ? (
               <svg
@@ -265,10 +265,10 @@ export default function Navbar() {
                         href={link.href}
                         aria-current={active ? "page" : undefined}
                         onClick={() => setIsMenuOpen(false)}
-                        className={`block rounded-lg px-4 py-3 text-base font-medium transition-colors duration-200 ${
+                        className={`block cursor-pointer rounded-lg px-4 py-3 text-base font-medium transition-colors duration-200 ${
                           active
                             ? "bg-accent-50 text-accent-strong dark:bg-surface-muted dark:text-accent"
-                            : "text-foreground hover:bg-surface-muted hover:text-heading"
+                            : "text-foreground hover:bg-surface-muted hover:text-heading active:bg-surface-muted active:text-heading"
                         }`}
                       >
                         {link.label}
@@ -291,10 +291,10 @@ export default function Navbar() {
                       href="/dashboard"
                       aria-current={isDashboardRoute ? "page" : undefined}
                       onClick={() => setIsMenuOpen(false)}
-                      className={`flex items-center gap-3 rounded-lg px-4 py-3 text-base font-semibold transition-colors duration-200 ${
+                      className={`flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-base font-semibold transition-colors duration-200 ${
                         isDashboardRoute
                           ? "bg-accent-50 text-accent-strong dark:bg-surface-muted dark:text-accent"
-                          : "text-foreground hover:bg-surface-muted hover:text-heading"
+                          : "text-foreground hover:bg-surface-muted hover:text-heading active:bg-surface-muted active:text-heading"
                       }`}
                     >
                       <DashboardIcon className="h-5 w-5 shrink-0" />
@@ -304,10 +304,10 @@ export default function Navbar() {
                       href="/dashboard/profile"
                       aria-current={pathname === "/dashboard/profile" ? "page" : undefined}
                       onClick={() => setIsMenuOpen(false)}
-                      className={`flex items-center gap-3 rounded-lg px-4 py-3 text-base font-semibold transition-colors duration-200 ${
+                      className={`flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-base font-semibold transition-colors duration-200 ${
                         pathname === "/dashboard/profile"
                           ? "bg-accent-50 text-accent-strong dark:bg-surface-muted dark:text-accent"
-                          : "text-foreground hover:bg-surface-muted hover:text-heading"
+                          : "text-foreground hover:bg-surface-muted hover:text-heading active:bg-surface-muted active:text-heading"
                       }`}
                     >
                       <ProfileIcon className="h-5 w-5 shrink-0" />
@@ -320,14 +320,14 @@ export default function Navbar() {
                     <Link
                       href="/sign-in"
                       onClick={() => setIsMenuOpen(false)}
-                      className="rounded-lg px-4 py-3 text-center text-base font-medium text-foreground transition-colors duration-200 hover:bg-surface-muted hover:text-heading"
+                      className="cursor-pointer rounded-lg px-4 py-3 text-center text-base font-medium text-foreground transition-colors duration-200 hover:bg-surface-muted hover:text-heading active:bg-surface-muted active:text-heading"
                     >
                       Sign In
                     </Link>
                     <Link
                       href="/sign-up"
                       onClick={() => setIsMenuOpen(false)}
-                      className="rounded-full bg-primary px-5 py-3 text-center text-base font-semibold text-primary-foreground shadow-sm transition-colors duration-200 hover:bg-primary-hover"
+                      className="cursor-pointer rounded-full bg-primary px-5 py-3 text-center text-base font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:scale-[0.98] active:bg-primary-hover"
                     >
                       Get Started
                     </Link>

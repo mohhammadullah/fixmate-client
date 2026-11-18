@@ -276,7 +276,7 @@ function RejectDialog({
             </div>
             <h2 id="reject-service-title" className="text-base font-bold leading-snug text-heading">Reject this service?</h2>
           </div>
-          <button type="button" onClick={onDismiss} disabled={pending} aria-label="Close dialog" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading disabled:cursor-not-allowed disabled:opacity-50">
+          <button type="button" onClick={onDismiss} disabled={pending} aria-label="Close dialog" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors duration-200 enabled:hover:bg-surface-muted enabled:hover:text-heading disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:scale-95">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-5 w-5"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>
         </div>
@@ -308,8 +308,8 @@ function RejectDialog({
             {error && <div role="alert" className="mt-4 rounded-xl border border-error/40 bg-error-soft/60 px-4 py-3 text-xs leading-relaxed text-error">{error}</div>}
           </div>
           <div className="flex flex-col-reverse gap-2 border-t border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
-            <button type="button" onClick={onDismiss} disabled={pending} className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60">Cancel</button>
-            <button type="submit" disabled={pending} aria-live="polite" className="inline-flex items-center justify-center gap-2 rounded-full bg-error px-5 py-2.5 text-sm font-semibold text-background shadow-sm transition-all duration-200 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70">
+            <button type="button" onClick={onDismiss} disabled={pending} className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:bg-surface-muted">Cancel</button>
+            <button type="submit" disabled={pending} aria-live="polite" className="inline-flex items-center justify-center gap-2 rounded-full bg-error px-5 py-2.5 text-sm font-semibold text-background shadow-sm transition-all duration-200 enabled:hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer active:scale-[0.98]">
               {pending ? (
                 <>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" className="h-4 w-4 animate-spin motion-reduce:animate-none"><circle cx="12" cy="12" r="9" strokeOpacity="0.3" /><path d="M21 12a9 9 0 0 0-9-9" /></svg>
@@ -404,7 +404,7 @@ function ServiceCard({
               type="button"
               onClick={(event) => onReject(service, event.currentTarget)}
               disabled={busy}
-              className="inline-flex items-center gap-2 rounded-full border border-error/40 bg-error-soft/50 px-4 py-2 text-xs font-semibold text-error transition-colors duration-200 hover:bg-error-soft disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-full border border-error/40 bg-error-soft/50 px-4 py-2 text-xs font-semibold text-error transition-colors duration-200 enabled:hover:bg-error-soft disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:scale-[0.98]"
             >
               {pendingAction === "reject" ? "Rejecting…" : "Reject"}
             </button>
@@ -412,7 +412,7 @@ function ServiceCard({
               type="button"
               onClick={(event) => onApprove(service, event.currentTarget)}
               disabled={busy}
-              className="inline-flex items-center gap-2 rounded-full bg-success px-4 py-2 text-xs font-semibold text-background shadow-sm transition-all duration-200 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-full bg-success px-4 py-2 text-xs font-semibold text-background shadow-sm transition-all duration-200 enabled:hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:scale-[0.98]"
             >
               {pendingAction === "approve" ? "Approving…" : "Approve"}
             </button>
@@ -556,14 +556,14 @@ export default function AdminServices() {
       <section className="flex min-h-[50vh] flex-col items-center justify-center px-6 py-16 text-center">
         <h1 className="text-2xl font-extrabold tracking-tight text-heading">Admin access only</h1>
         <p className="mx-auto mt-2 max-w-md text-sm text-muted">Service moderation is available to administrators only.</p>
-        <Link href="/dashboard" className="mt-6 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Back to your dashboard</Link>
+        <Link href="/dashboard" className="mt-6 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Back to your dashboard</Link>
       </section>
     );
   }
 
   const isLoading = state.phase === "loading";
   const totalItems = state.phase === "success" ? state.data.pagination.totalItems : null;
-  const selectClass = "h-11 w-full rounded-lg border border-border-strong bg-surface px-3 text-sm font-medium text-foreground outline-none transition-colors duration-200 hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25";
+  const selectClass = "h-11 w-full rounded-lg border border-border-strong bg-surface px-3 text-sm font-medium text-foreground outline-none transition-colors duration-200 hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25 cursor-pointer";
 
   return (
     <div>
@@ -602,7 +602,7 @@ export default function AdminServices() {
             onClick={() => { setState({ phase: "loading" }); setReloadToken((token) => token + 1); }}
             disabled={isLoading}
             aria-label="Refresh services"
-            className="flex h-11 w-11 items-center justify-center rounded-lg border border-border text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-11 w-11 items-center justify-center rounded-lg border border-border text-muted transition-colors duration-200 enabled:hover:bg-surface-muted enabled:hover:text-heading disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:scale-95"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`h-5 w-5 ${isLoading ? "animate-spin motion-reduce:animate-none" : ""}`}><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6" /></svg>
           </button>
@@ -612,8 +612,8 @@ export default function AdminServices() {
       {notice && (
         <div role={notice.kind === "success" ? "status" : "alert"} className={`mt-4 flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${notice.kind === "success" ? "border-success/40 bg-success-soft/60 text-success" : "border-error/40 bg-error-soft/60 text-error"}`}>
           <p className="min-w-0 flex-1 font-medium">{notice.message}</p>
-          {notice.refresh && <button type="button" onClick={() => { setNotice(null); setState({ phase: "loading" }); setReloadToken((token) => token + 1); }} className="rounded-full border border-error/40 bg-surface px-3 py-1.5 text-xs font-semibold">Refresh</button>}
-          <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss message">✕</button>
+          {notice.refresh && <button type="button" onClick={() => { setNotice(null); setState({ phase: "loading" }); setReloadToken((token) => token + 1); }} className="rounded-full border border-error/40 bg-surface px-3 py-1.5 text-xs font-semibold cursor-pointer transition-colors duration-200 hover:bg-surface-muted active:bg-surface-muted">Refresh</button>}
+          <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss message" className="cursor-pointer rounded-md px-1 transition-colors duration-200 hover:bg-surface-muted hover:text-heading active:scale-90">✕</button>
         </div>
       )}
 
@@ -625,9 +625,9 @@ export default function AdminServices() {
             <p className="mx-auto mt-1.5 max-w-md text-sm text-muted">{state.error.message}</p>
             <div className="mt-5 flex justify-center gap-3">
               {state.error.kind === "unauthorized" ? (
-                <Link href="/sign-in" className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Sign in again</Link>
+                <Link href="/sign-in" className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Sign in again</Link>
               ) : (
-                <button type="button" onClick={() => { setState({ phase: "loading" }); setReloadToken((token) => token + 1); }} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Try again</button>
+                <button type="button" onClick={() => { setState({ phase: "loading" }); setReloadToken((token) => token + 1); }} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Try again</button>
               )}
             </div>
           </div>
@@ -660,9 +660,9 @@ export default function AdminServices() {
               ))}
             </ul>
             <nav aria-label="Services pagination" className="mt-6 flex items-center justify-between gap-3 border-t border-border pt-5">
-              <button type="button" onClick={() => { setState({ phase: "loading" }); setPage(Math.max(1, state.data.pagination.currentPage - 1)); }} disabled={!state.data.pagination.hasPrevPage || isLoading} className="rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50">Previous</button>
+              <button type="button" onClick={() => { setState({ phase: "loading" }); setPage(Math.max(1, state.data.pagination.currentPage - 1)); }} disabled={!state.data.pagination.hasPrevPage || isLoading} className="rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:bg-surface-muted">Previous</button>
               <p className="text-xs font-medium tabular-nums text-muted">Page <span className="font-semibold text-heading">{state.data.pagination.currentPage}</span> of <span className="font-semibold text-heading">{Math.max(state.data.pagination.totalPages, 1)}</span></p>
-              <button type="button" onClick={() => { setState({ phase: "loading" }); setPage(state.data.pagination.currentPage + 1); }} disabled={!state.data.pagination.hasNextPage || isLoading} className="rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50">Next</button>
+              <button type="button" onClick={() => { setState({ phase: "loading" }); setPage(state.data.pagination.currentPage + 1); }} disabled={!state.data.pagination.hasNextPage || isLoading} className="rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:bg-surface-muted">Next</button>
             </nav>
           </>
         )}

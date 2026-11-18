@@ -86,7 +86,7 @@ export default async function PaymentCancelPage({
             {bookingId ? (
               <Link
                 href={`/dashboard/bookings/${bookingId}`}
-                className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:scale-[0.98] active:bg-primary-hover"
               >
                 Back to booking details
                 <svg
@@ -105,7 +105,7 @@ export default async function PaymentCancelPage({
             ) : (
               <Link
                 href="/dashboard/bookings"
-                className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:scale-[0.98] active:bg-primary-hover"
               >
                 Go to My Bookings
                 <svg
@@ -124,7 +124,7 @@ export default async function PaymentCancelPage({
             )}
             <Link
               href="/dashboard/payments"
-              className="inline-flex items-center gap-2 rounded-full border border-border px-6 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border px-6 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted active:bg-surface-muted"
             >
               Payment history
             </Link>

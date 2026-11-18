@@ -20,7 +20,7 @@ type ServicesExplorerProps = {
 };
 
 const fieldClass =
-  "h-12 w-full rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted transition-colors duration-200 focus:border-accent-500";
+  "h-12 w-full rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted transition-colors duration-200 hover:border-accent-500 focus:border-accent-500";
 
 export default function ServicesExplorer({
   initialSearch,
@@ -104,7 +104,7 @@ export default function ServicesExplorer({
               name="category"
               value={category}
               onChange={(event) => setCategory(event.target.value)}
-              className={`${fieldClass} appearance-none pl-4 pr-10 ${
+              className={`${fieldClass} appearance-none pl-4 pr-10 cursor-pointer ${
                 category === "" ? "text-muted" : ""
               }`}
             >
@@ -166,7 +166,7 @@ export default function ServicesExplorer({
             <button
               type="submit"
               aria-label="Apply filters"
-              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:scale-[0.98] active:bg-primary-hover cursor-pointer"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -188,7 +188,7 @@ export default function ServicesExplorer({
             <button
               type="button"
               onClick={handleClearFilters}
-              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface px-4 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted"
+              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface px-4 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted active:scale-[0.98] active:bg-surface-muted cursor-pointer"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -284,7 +284,7 @@ export default function ServicesExplorer({
               <button
                 type="button"
                 onClick={handleClearFilters}
-                className="font-semibold text-accent-strong underline-offset-2 hover:underline dark:text-accent"
+                className="font-semibold text-accent-strong underline-offset-2 hover:underline hover:text-accent-600 dark:text-accent dark:hover:text-accent-400 cursor-pointer"
               >
                 Clear them now
               </button>

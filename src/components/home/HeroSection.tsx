@@ -98,7 +98,7 @@ export default function HeroSection() {
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
                 href="/services"
-                className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+                className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:scale-[0.98] active:bg-primary-hover cursor-pointer"
               >
                 Explore Services
                 <svg
@@ -118,7 +118,7 @@ export default function HeroSection() {
               </Link>
               <Link
                 href="/#how-it-works"
-                className="inline-flex items-center gap-2 rounded-full border border-border-strong bg-surface px-6 py-3 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted"
+                className="inline-flex items-center gap-2 rounded-full border border-border-strong bg-surface px-6 py-3 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted active:bg-surface-muted active:scale-[0.98] cursor-pointer"
               >
                 How It Works
                 <svg

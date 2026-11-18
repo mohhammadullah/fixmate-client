@@ -204,7 +204,7 @@ async function submitApplication(payload: FormValues & { skills: string[] }): Pr
 
 
 const inputBase =
-  "w-full rounded-xl border border-border-strong bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted shadow-xs outline-none transition-colors duration-200 hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25 aria-[invalid=true]:border-error/60";
+  "w-full rounded-xl border border-border-strong bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted shadow-xs outline-none transition-colors duration-200 enabled:hover:border-accent-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25 aria-[invalid=true]:border-error/60";
 
 function Field({
   id,
@@ -259,7 +259,7 @@ function AccessDenied({ role }: { role: "technician" | "admin" | null }) {
           ? `You're signed in with a ${label} account, so the technician application isn't available here.`
           : "Your account's role isn't recognized. Please contact FixMate support if this looks wrong."}
       </p>
-      <Link href="/dashboard" className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md">
+      <Link href="/dashboard" className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]">
         Back to your dashboard
       </Link>
     </section>
@@ -393,7 +393,7 @@ function ApplicationForm({
                   {skills.map((skill, index) => (
                     <li key={`${skill}-${index}`} className="inline-flex items-center gap-1.5 rounded-full border border-border-strong bg-surface-muted py-1 pl-3 pr-1.5 text-xs font-medium text-foreground">
                       <span className="max-w-48 truncate">{skill}</span>
-                      <button type="button" onClick={() => removeSkill(index)} disabled={submitting} aria-label={`Remove skill ${skill}`} className="flex h-5 w-5 items-center justify-center rounded-full text-muted transition-colors duration-200 hover:bg-error-soft hover:text-error disabled:cursor-not-allowed">
+                      <button type="button" onClick={() => removeSkill(index)} disabled={submitting} aria-label={`Remove skill ${skill}`} className="flex h-5 w-5 items-center justify-center rounded-full text-muted transition-colors duration-200 enabled:hover:bg-error-soft enabled:hover:text-error cursor-pointer enabled:active:scale-90 disabled:cursor-not-allowed disabled:opacity-50">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-3 w-3"><path d="M18 6 6 18M6 6l12 12" /></svg>
                       </button>
                     </li>
@@ -415,7 +415,7 @@ function ApplicationForm({
                   placeholder="e.g. Laptop Repair"
                   className="min-w-0 flex-1 border-0 bg-transparent px-2 py-1.5 text-sm text-foreground outline-none placeholder:text-muted"
                 />
-                <button type="button" onClick={() => addSkill(skillDraft)} disabled={submitting || skillDraft.trim().length === 0} className="shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50">Add</button>
+                <button type="button" onClick={() => addSkill(skillDraft)} disabled={submitting || skillDraft.trim().length === 0} className="shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted cursor-pointer enabled:active:bg-surface-muted enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50">Add</button>
               </div>
             </div>
           </Field>
@@ -436,7 +436,7 @@ function ApplicationForm({
           Submitting sends your application for admin review. Your account role stays
           <span className="font-semibold text-foreground"> customer</span> until an admin approves it.
         </p>
-        <button type="submit" disabled={submitting} aria-live="polite" className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60">
+        <button type="submit" disabled={submitting} aria-live="polite" className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 enabled:hover:bg-primary-hover enabled:hover:shadow-md cursor-pointer enabled:active:bg-primary-hover enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60">
           {submitting ? (
             <>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" className="h-4 w-4 animate-spin motion-reduce:animate-none">
@@ -513,9 +513,9 @@ export default function TechnicianApplication() {
           <p className="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-muted">{loadError.message}</p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             {loadError.kind === "unauthorized" ? (
-              <Link href="/sign-in" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Sign in again</Link>
+              <Link href="/sign-in" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]">Sign in again</Link>
             ) : (
-              <button type="button" onClick={() => { setLoading(true); setReloadToken((token) => token + 1); }} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Try again</button>
+              <button type="button" onClick={() => { setLoading(true); setReloadToken((token) => token + 1); }} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]">Try again</button>
             )}
           </div>
         </div>
@@ -549,7 +549,7 @@ export default function TechnicianApplication() {
             Your application was approved. Your account is now a technician — sign in again if
             your dashboard still shows customer navigation, then manage your services.
           </p>
-          <Link href="/dashboard/my-services" className="mt-5 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Go to My Services</Link>
+          <Link href="/dashboard/my-services" className="mt-5 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md cursor-pointer active:bg-primary-hover active:scale-[0.98]">Go to My Services</Link>
         </section>
       )}
 

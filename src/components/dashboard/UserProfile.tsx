@@ -350,9 +350,9 @@ export default function UserProfile() {
         <p className="mx-auto mt-1.5 max-w-md text-sm text-muted">{state.error.message}</p>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
           {unauthorized ? (
-            <Link href="/sign-in" className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Sign in again</Link>
+            <Link href="/sign-in" className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Sign in again</Link>
           ) : (
-            <button type="button" onClick={() => { setState({ phase: "loading" }); setReloadToken((token) => token + 1); }} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">Try again</button>
+            <button type="button" onClick={() => { setState({ phase: "loading" }); setReloadToken((token) => token + 1); }} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Try again</button>
           )}
         </div>
       </div>
@@ -395,7 +395,7 @@ export default function UserProfile() {
             {profile.role === "customer" && profile.technicianApplicationStatus !== "approved" && (
               <Link
                 href="/dashboard/become-technician"
-                className="mt-5 inline-flex items-center gap-2 rounded-full border border-accent-500/40 px-4 py-2 text-xs font-semibold text-accent-strong transition-colors duration-200 hover:bg-surface-muted dark:text-accent"
+                className="mt-5 inline-flex items-center gap-2 rounded-full border border-accent-500/40 px-4 py-2 text-xs font-semibold text-accent-strong transition-colors duration-200 hover:bg-surface-muted dark:text-accent cursor-pointer active:bg-surface-muted"
               >
                 {profile.technicianApplicationStatus === "rejected" ? "Apply again" : "Become a technician"}
               </Link>
@@ -517,7 +517,7 @@ export default function UserProfile() {
                 type="submit"
                 disabled={saving}
                 aria-live="polite"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 enabled:hover:bg-primary-hover enabled:hover:shadow-md enabled:active:bg-primary-hover enabled:active:scale-[0.98] cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving ? (
                   <>

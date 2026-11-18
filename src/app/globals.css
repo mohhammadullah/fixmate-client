@@ -227,6 +227,22 @@ h6 {
 }
 
 /* --------------------------------------------------------------------------
+   Interactive cursor defaults — genuine clickable elements get a pointer;
+   disabled controls get not-allowed. Tailwind utilities (cursor-pointer /
+   cursor-not-allowed) and component styles may still override per element.
+   -------------------------------------------------------------------------- */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+summary {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* --------------------------------------------------------------------------
    Scrollbar — subtle, theme-aware
    -------------------------------------------------------------------------- */
 ::-webkit-scrollbar {

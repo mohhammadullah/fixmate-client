@@ -302,7 +302,7 @@ function ErrorPanel({ error, onRetry }: { error: ServicesError; onRetry: () => v
       <button
         type="button"
         onClick={onRetry}
-        className="mt-5 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+        className="mt-5 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:scale-[0.98] active:bg-primary-hover cursor-pointer"
       >
         Try again
       </button>
@@ -340,7 +340,7 @@ function EmptyState({ onReset }: { onReset: () => void }) {
       <button
         type="button"
         onClick={onReset}
-        className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+        className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:scale-[0.98] active:bg-primary-hover cursor-pointer"
       >
         Reset filters
       </button>
@@ -355,7 +355,7 @@ function ServiceCard({ service }: { service: PublicService }) {
   const hiddenAmenities = service.amenities.length - shownAmenities.length;
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-500/40 hover:shadow-lg">
       <div className="relative h-48 w-full overflow-hidden bg-navy-900">
         {showImage ? (
           // eslint-disable-next-line @next/next/no-img-element -- backend image URLs are remote and not known at build time, so next/image remotePatterns can't be configured.
@@ -451,7 +451,7 @@ function ServiceCard({ service }: { service: PublicService }) {
         <Link
           href={`/services/${service._id}`}
           aria-label={`View details for ${service.title}`}
-          className="mt-auto inline-flex w-fit items-center gap-2 pt-5 text-xs font-semibold text-accent-strong transition-colors duration-200 hover:text-accent-600 dark:text-accent dark:hover:text-accent-400"
+          className="mt-auto inline-flex w-fit items-center gap-2 pt-5 text-xs font-semibold text-accent-strong transition-colors duration-200 hover:text-accent-600 dark:text-accent dark:hover:text-accent-400 cursor-pointer"
         >
           View Details
           <svg
@@ -646,7 +646,7 @@ export default function ServicesListing({
                 setCategory(event.target.value);
                 resetPage();
               }}
-              className={`${fieldClass} appearance-none pl-4 pr-10 ${category === "" ? "text-muted" : ""}`}
+              className={`${fieldClass} appearance-none pl-4 pr-10 cursor-pointer ${category === "" ? "text-muted" : ""}`}
             >
               <option value="">All categories</option>
               {CATEGORIES.map((name) => (
@@ -758,7 +758,7 @@ export default function ServicesListing({
                 setSort(event.target.value as SortOption);
                 resetPage();
               }}
-              className={fieldClass}
+              className={`${fieldClass} cursor-pointer`}
             >
               {SORT_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -772,7 +772,7 @@ export default function ServicesListing({
             <button
               type="button"
               onClick={resetFilters}
-              className="h-12 flex-1 rounded-xl border border-border-strong bg-surface px-4 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted"
+              className="h-12 flex-1 rounded-xl border border-border-strong bg-surface px-4 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted active:scale-[0.98] active:bg-surface-muted cursor-pointer"
             >
               Reset
             </button>
@@ -781,7 +781,7 @@ export default function ServicesListing({
               onClick={reload}
               disabled={isLoading}
               aria-label="Refresh services"
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border-strong bg-surface text-muted transition-colors duration-200 hover:bg-surface-muted hover:text-heading disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border-strong bg-surface text-muted transition-all duration-200 enabled:hover:bg-surface-muted enabled:hover:text-heading enabled:active:scale-95 enabled:active:bg-surface-muted enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -848,7 +848,7 @@ export default function ServicesListing({
                 setPage(Math.max(1, state.data.pagination.currentPage - 1));
               }}
               disabled={!state.data.pagination.hasPrevPage || isLoading}
-              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted enabled:active:bg-surface-muted enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -881,7 +881,7 @@ export default function ServicesListing({
                 setPage(state.data.pagination.currentPage + 1);
               }}
               disabled={!state.data.pagination.hasNextPage || isLoading}
-              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-heading transition-colors duration-200 enabled:hover:bg-surface-muted enabled:active:bg-surface-muted enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span className="hidden sm:inline">Next</span>
               <svg

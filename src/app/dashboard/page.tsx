@@ -140,7 +140,7 @@ export default function DashboardPage() {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className="group flex h-full items-start gap-4 rounded-2xl border border-border bg-surface p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-500/40 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2"
+                  className="group flex h-full cursor-pointer items-start gap-4 rounded-2xl border border-border bg-surface p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-500/40 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
                   <span
                     aria-hidden="true"
@@ -205,7 +205,7 @@ export default function DashboardPage() {
           </p>
           <Link
             href="/services"
-            className="relative mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md"
+            className="relative mt-6 inline-flex cursor-pointer items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:scale-[0.98] active:bg-primary-hover"
           >
             Explore our services
             <ArrowRightIcon className="h-4 w-4" />

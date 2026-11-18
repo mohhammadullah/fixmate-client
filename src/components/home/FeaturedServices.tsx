@@ -146,7 +146,7 @@ export default function FeaturedServices() {
                 <Link
                   href={serviceHref(SPOTLIGHT.category)}
                   aria-label="View details for Smartphone Screen Repair"
-                  className="mt-6 inline-flex w-fit items-center gap-2 rounded-full bg-accent-500 px-6 py-3 text-sm font-semibold text-[#04121f] shadow-glow transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent-400"
+                  className="mt-6 inline-flex w-fit items-center gap-2 rounded-full bg-accent-500 px-6 py-3 text-sm font-semibold text-[#04121f] shadow-glow transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent-400 active:scale-[0.98] cursor-pointer"
                 >
                   View Details
                   <svg
@@ -221,7 +221,7 @@ export default function FeaturedServices() {
           <ul className="flex flex-col divide-y divide-border overflow-hidden rounded-3xl border border-border bg-background shadow-xs lg:col-span-2">
             {SERVICES.map((service) => (
               <li key={service.title} className="group flex flex-1">
-                <div className="flex flex-1 items-center gap-4 p-4 transition-colors duration-200 hover:bg-surface-muted/50 sm:gap-5 sm:p-5">
+                <div className="relative flex flex-1 items-center gap-4 p-4 transition-colors duration-200 hover:bg-surface-muted/50 active:bg-surface-muted sm:gap-5 sm:p-5">
                   {/* Icon */}
                   <span
                     aria-hidden="true"
@@ -256,7 +256,7 @@ export default function FeaturedServices() {
                     <Link
                       href={serviceHref(service.category)}
                       aria-label={`View details for ${service.title}`}
-                      className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-accent-strong transition-colors duration-200 hover:text-accent-600 dark:text-accent dark:hover:text-accent-400"
+                      className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-accent-strong transition-colors duration-200 hover:text-accent-600 after:absolute after:inset-0 after:content-[''] dark:text-accent dark:hover:text-accent-400 cursor-pointer"
                     >
                       View Details
                       <svg

@@ -314,10 +314,17 @@ export default function AdminBookings() {
           </div>
         )}
         {state.phase === "success" && state.data.items.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-border-strong bg-surface-muted/30 px-6 py-14 text-center">
-            <h2 className="text-lg font-bold text-heading">No bookings found</h2>
-            <p className="mx-auto mt-2 max-w-md text-sm text-muted">Try a different search or filter selection.</p>
-          </div>
+          status === "cancelled" ? (
+            <div className="rounded-2xl border border-dashed border-border-strong bg-surface-muted/30 px-6 py-14 text-center">
+              <h2 className="text-lg font-bold text-heading">No cancelled bookings</h2>
+              <p className="mx-auto mt-2 max-w-md text-sm text-muted">Bookings cancelled on the platform will appear here and be kept for records and reporting.</p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-border-strong bg-surface-muted/30 px-6 py-14 text-center">
+              <h2 className="text-lg font-bold text-heading">No bookings found</h2>
+              <p className="mx-auto mt-2 max-w-md text-sm text-muted">Try a different search or filter selection.</p>
+            </div>
+          )
         )}
         {state.phase === "success" && state.data.items.length > 0 && (
           <>

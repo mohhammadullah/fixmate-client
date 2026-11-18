@@ -14,14 +14,16 @@ import {
 
 /** Incoming Bookings — GET /api/bookings/technician (verifyToken + verifyTechnician) returns only bookings whose technicianId matches the verified JWT; no technicianId is ever sent. The only booking-details endpoint (GET /api/bookings/:id) is customer-only (verifyCustomer), so no "View Details" action is offered here. */
 
-/** Statuses offered in the filter — cancelled is still valid in the DTO
- *  (and rendered when returned), but is intentionally not a filter option. */
+/** Statuses offered in the filter. Cancelled is a first-class option: the
+ *  default list excludes cancelled bookings (server-side), and selecting
+ *  Cancelled returns only cancelled records. */
 const FILTER_STATUSES = [
   "requested",
   "accepted",
   "rejected",
   "in-progress",
   "completed",
+  "cancelled",
 ] as const satisfies readonly BookingStatus[];
 
 type StatusFilter = BookingStatus | "all";
@@ -644,13 +646,16 @@ function ErrorPanel({
   );
 }
 
-function EmptyState({ filtered, onClearFilter }: { filtered: boolean; onClearFilter: () => void }) {
+function EmptyState({ filtered, onClearFilter, statusFilter }: { filtered: boolean; onClearFilter: () => void; statusFilter?: StatusFilter }) {
   if (filtered) {
+    const cancelled = statusFilter === "cancelled";
     return (
       <div className="rounded-2xl border border-dashed border-border-strong bg-surface-muted/30 px-6 py-12 text-center">
-        <h2 className="text-lg font-bold text-heading">No matching bookings</h2>
+        <h2 className="text-lg font-bold text-heading">{cancelled ? "No cancelled bookings" : "No matching bookings"}</h2>
         <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
-          You have no bookings with this status yet. Clear the filter to see everything.
+          {cancelled
+            ? "When a customer cancels a booking, it will appear here and be kept for your records."
+            : "You have no bookings with this status yet. Clear the filter to see everything."}
         </p>
         <button
           type="button"
@@ -1977,7 +1982,7 @@ export default function TechnicianBookings() {
         {state.phase === "error" && <ErrorPanel error={state.error} onRetry={reload} />}
 
         {state.phase === "success" && state.data.items.length === 0 && (
-          <EmptyState filtered={filtered} onClearFilter={clearFilter} />
+          <EmptyState filtered={filtered} onClearFilter={clearFilter} statusFilter={status} />
         )}
 
         {state.phase === "success" && state.data.items.length > 0 && (

@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
+import { createCheckoutSession, CheckoutSessionError } from "@/lib/payments";
 
 /** Types mirror the backend contract exactly:
  *  GET /api/bookings/my (verifyToken + verifyCustomer) returns
@@ -584,13 +586,16 @@ function ErrorPanel({
   );
 }
 
-function EmptyState({ filtered, onClearFilter }: { filtered: boolean; onClearFilter: () => void }) {
+function EmptyState({ filtered, onClearFilter, statusFilter }: { filtered: boolean; onClearFilter: () => void; statusFilter?: BookingStatus | "all" }) {
   if (filtered) {
+    const cancelled = statusFilter === "cancelled";
     return (
       <div className="rounded-2xl border border-dashed border-border-strong bg-surface-muted/30 px-6 py-12 text-center">
-        <h2 className="text-lg font-bold text-heading">No matching bookings</h2>
+        <h2 className="text-lg font-bold text-heading">{cancelled ? "No cancelled bookings" : "No matching bookings"}</h2>
         <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
-          You have no bookings with this status yet. Clear the filter to see everything.
+          {cancelled
+            ? "When a job is cancelled it will appear here and be kept for your records."
+            : "You have no bookings with this status yet. Clear the filter to see everything."}
         </p>
         <button
           type="button"
@@ -646,6 +651,91 @@ function EmptyState({ filtered, onClearFilter }: { filtered: boolean; onClearFil
         </svg>
       </Link>
     </div>
+  );
+}
+
+/** Pay Now — starts the shared Stripe Checkout flow for a completed, unpaid
+ *  booking. The amount shown is display-only; the server re-reads it from the
+ *  booking record, so a tampered client can never influence the charge. */
+function PayNowButton({
+  bookingId,
+  finalAmount,
+}: {
+  bookingId: string;
+  finalAmount: number;
+}) {
+  const [pending, setPending] = useState(false);
+
+  async function handlePayNow() {
+    // Guard against double clicks while the session is being created.
+    if (pending) return;
+    setPending(true);
+
+    try {
+      const checkoutUrl = await createCheckoutSession(bookingId);
+      // Hard navigation to Stripe's hosted Checkout — the only correct
+      // place to enter payment details.
+      window.location.assign(checkoutUrl);
+      // Keep the button disabled: navigation is in flight.
+    } catch (error) {
+      if (error instanceof CheckoutSessionError) {
+        toast.error(error.message);
+      } else {
+        toast.error("Something went wrong while starting the payment. Please try again.");
+      }
+      setPending(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handlePayNow}
+      disabled={pending}
+      aria-busy={pending}
+      className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all duration-200 enabled:hover:bg-primary-hover enabled:hover:shadow-md enabled:active:bg-primary-hover enabled:active:scale-[0.98] cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
+    >
+      {pending ? (
+        <>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+            className="h-4 w-4 animate-spin motion-reduce:animate-none"
+          >
+            <path d="M21 12a9 9 0 1 1-2.64-6.36" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          Starting payment…
+        </>
+      ) : (
+        <>
+          Pay Now
+          <span aria-hidden="true">·</span>
+          <span className="tabular-nums">{formatAmount(finalAmount)}</span>
+        </>
+      )}
+    </button>
+  );
+}
+
+/** Completed + paid — an explicit indicator in place of the Pay Now action. */
+function PaidIndicator() {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-success/40 bg-success-soft px-4 py-2 text-xs font-semibold text-success">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        className="h-4 w-4"
+      >
+        <path d="M20 6 9 17l-5-5" />
+      </svg>
+      Paid
+    </span>
   );
 }
 
@@ -800,6 +890,41 @@ function BookingCard({
               </button>
             </div>
           )}
+          {/* Payment + details — Pay Now only for a completed, unpaid booking
+              with a settled final amount; paid bookings show a Paid indicator.
+              Everything else (requested/accepted/in-progress/cancelled/rejected,
+              or an incomplete unpaid job) shows no payment action. */}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+            <Link
+              href={`/dashboard/bookings/${encodeURIComponent(booking._id)}`}
+              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted cursor-pointer active:bg-surface-muted"
+            >
+              Booking details
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="h-4 w-4"
+              >
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              {booking.status === "completed" && booking.paymentStatus === "paid" && (
+                <PaidIndicator />
+              )}
+              {booking.status === "completed" &&
+                booking.paymentStatus === "unpaid" &&
+                typeof booking.finalAmount === "number" &&
+                booking.finalAmount > 0 && (
+                  <PayNowButton bookingId={booking._id} finalAmount={booking.finalAmount} />
+                )}
+            </div>
+          </div>
         </div>
       </div>
     </article>
@@ -1392,7 +1517,7 @@ export default function MyBookings() {
         )}
 
         {state.phase === "success" && state.data.items.length === 0 && (
-          <EmptyState filtered={filtered} onClearFilter={() => { beginLoading(); setStatus("all"); setPage(1); }} />
+          <EmptyState filtered={filtered} onClearFilter={() => { beginLoading(); setStatus("all"); setPage(1); }} statusFilter={status} />
         )}
 
         {state.phase === "success" && state.data.items.length > 0 && (

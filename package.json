@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "type-check": "tsc --noEmit",
-    "test:payment-sync": "node scripts/payment-sync-test.mjs"
+    "test:payment-sync": "node scripts/payment-sync-test.mjs",
+    "test:payment-history": "node scripts/payment-history-test.mjs"
   },
   "dependencies": {
     "better-auth": "^1.7.25",

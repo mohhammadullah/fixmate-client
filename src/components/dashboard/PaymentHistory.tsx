@@ -5,200 +5,22 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { API_BASE } from "@/lib/api";
 import { canRequestRefund, refundStateLabel } from "@/lib/refund-eligibility";
-import type { CustomerRefund } from "@/lib/payments";
+import {
+  PAYMENT_RECORD_STATUSES,
+  PaymentsError,
+  isRecord,
+  parsePaymentsResponse,
+  type CustomerPayment,
+  type PaymentsPageData,
+  type PaymentRecordStatus,
+} from "@/lib/payment-history";
 import RefundRequestDialog from "@/components/dashboard/RefundRequestDialog";
 
-/** Types — mirror the backend contract exactly.
- *  GET /api/payments/my (verifyToken + verifyCustomer) returns
- *  { success, data, pagination }. Mongo dates serialize as strings;
- *  `amount` is in major currency units, `currency` is lowercase ISO 4217.
- *  Stripe internals (session ids, checkout URLs) are never returned by the API. */
-
-export const PAYMENT_RECORD_STATUSES = [
-  "pending",
-  "succeeded",
-  "failed",
-  "expired",
-] as const;
-export type PaymentRecordStatus = (typeof PAYMENT_RECORD_STATUSES)[number];
-
-export interface CustomerPayment {
-  id: string;
-  bookingId: string;
-  amount: number;
-  currency: string;
-  status: PaymentRecordStatus;
-  createdAt: string;
-  updatedAt: string;
-  paidAt?: string;
-  /** Customer-safe refund records from the payment API, when any exist. */
-  refunds?: CustomerRefund[];
-}
-
-export interface PaymentsPagination {
-  currentPage: number;
-  limit: number;
-  totalItems: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
-}
-
-interface PaymentsPageData {
-  items: CustomerPayment[];
-  pagination: PaymentsPagination;
-}
-
-type PaymentsErrorKind = "unauthorized" | "network" | "server" | "parse";
-
-class PaymentsError extends Error {
-  readonly kind: PaymentsErrorKind;
-  constructor(kind: PaymentsErrorKind, message: string) {
-    super(message);
-    this.name = "PaymentsError";
-    this.kind = kind;
-  }
-}
+/** Payment record lifecycle — mirrors the backend enum exactly. */
+export { PAYMENT_RECORD_STATUSES };
+export type { CustomerPayment, PaymentsPageData, PaymentRecordStatus };
 
 const PAGE_SIZE = 10;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function requiredString(record: Record<string, unknown>, key: string): string {
-  const value = record[key];
-  if (typeof value !== "string" || value.length === 0) {
-    throw new PaymentsError("parse", "The server returned an unexpected payment payload.");
-  }
-  return value;
-}
-
-function requiredFiniteNumber(record: Record<string, unknown>, key: string): number {
-  const value = record[key];
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    throw new PaymentsError("parse", "The server returned an unexpected payment payload.");
-  }
-  return value;
-}
-
-function requiredEnum<T extends string>(
-  record: Record<string, unknown>,
-  key: string,
-  allowed: readonly T[]
-): T {
-  const value = record[key];
-  if (typeof value !== "string" || !(allowed as readonly string[]).includes(value)) {
-    throw new PaymentsError("parse", "The server returned an unknown value in a payment field.");
-  }
-  return value as T;
-}
-
-const REFUND_STATUSES = ["pending", "succeeded", "failed", "rejected"] as const;
-
-function parseRefund(raw: unknown): CustomerRefund {
-  if (!isRecord(raw)) {
-    throw new PaymentsError("parse", "The server returned an unexpected refund payload.");
-  }
-  const status = raw.status;
-  if (
-    typeof status !== "string" ||
-    !(REFUND_STATUSES as readonly string[]).includes(status) ||
-    typeof raw.id !== "string" ||
-    typeof raw.paymentId !== "string" ||
-    typeof raw.amount !== "number" ||
-    !Number.isFinite(raw.amount) ||
-    typeof raw.amountMinor !== "number" ||
-    !Number.isFinite(raw.amountMinor) ||
-    typeof raw.currency !== "string" ||
-    typeof raw.reason !== "string" ||
-    typeof raw.requestedAt !== "string"
-  ) {
-    throw new PaymentsError("parse", "The server returned an unexpected refund payload.");
-  }
-  return {
-    id: raw.id,
-    paymentId: raw.paymentId,
-    amount: raw.amount,
-    amountMinor: raw.amountMinor,
-    currency: raw.currency,
-    reason: raw.reason,
-    requestedAt: raw.requestedAt,
-    status: status as CustomerRefund["status"],
-    ...(typeof raw.decidedAt === "string" ? { decidedAt: raw.decidedAt } : {}),
-    ...(typeof raw.decisionNote === "string" ? { decisionNote: raw.decisionNote } : {}),
-    ...(typeof raw.failureReason === "string" ? { failureReason: raw.failureReason } : {}),
-  };
-}
-
-function parsePayment(raw: unknown): CustomerPayment {
-  if (!isRecord(raw)) {
-    throw new PaymentsError("parse", "The server returned an unexpected payment payload.");
-  }
-
-  const paidAt = raw.paidAt;
-  if (paidAt !== undefined && paidAt !== null && typeof paidAt !== "string") {
-    throw new PaymentsError("parse", "The server returned an unexpected payment payload.");
-  }
-  if (raw.refunds !== undefined && !Array.isArray(raw.refunds)) {
-    throw new PaymentsError("parse", "The server returned an unexpected refund payload.");
-  }
-
-  return {
-    id: requiredString(raw, "id"),
-    bookingId: requiredString(raw, "bookingId"),
-    amount: requiredFiniteNumber(raw, "amount"),
-    currency: requiredString(raw, "currency").toLowerCase(),
-    status: requiredEnum(raw, "status", PAYMENT_RECORD_STATUSES),
-    createdAt: requiredString(raw, "createdAt"),
-    updatedAt: requiredString(raw, "updatedAt"),
-    ...(typeof paidAt === "string" ? { paidAt } : {}),
-    ...(Array.isArray(raw.refunds) && raw.refunds.length > 0
-      ? { refunds: raw.refunds.map(parseRefund) }
-      : {}),
-  };
-}
-
-function parsePagination(raw: unknown): PaymentsPagination {
-  if (!isRecord(raw)) {
-    throw new PaymentsError("parse", "The server returned an unexpected pagination payload.");
-  }
-  const currentPage = requiredFiniteNumber(raw, "currentPage");
-  const limit = requiredFiniteNumber(raw, "limit");
-  const totalItems = requiredFiniteNumber(raw, "totalItems");
-  const totalPages = requiredFiniteNumber(raw, "totalPages");
-  if (typeof raw.hasNextPage !== "boolean" || typeof raw.hasPrevPage !== "boolean") {
-    throw new PaymentsError("parse", "The server returned an unexpected pagination payload.");
-  }
-  return {
-    currentPage,
-    limit,
-    totalItems,
-    totalPages,
-    hasNextPage: raw.hasNextPage,
-    hasPrevPage: raw.hasPrevPage,
-  };
-}
-
-function parsePaymentsResponse(body: unknown): PaymentsPageData {
-  if (!isRecord(body)) {
-    throw new PaymentsError("parse", "The server returned an unexpected response.");
-  }
-  if (body.success !== true) {
-    const message =
-      typeof body.message === "string" && body.message.length > 0 && body.message.length <= 200
-        ? body.message
-        : "The server couldn't load your payments.";
-    throw new PaymentsError("server", message);
-  }
-  if (!Array.isArray(body.data)) {
-    throw new PaymentsError("parse", "The server returned an unexpected payments payload.");
-  }
-  return {
-    items: body.data.map(parsePayment),
-    pagination: parsePagination(body.pagination),
-  };
-}
 
 /** Retrieve a short-lived JWT from the Better Auth server (`/api/auth/token`,
  *  session-cookie gated). Returns the token string only. */

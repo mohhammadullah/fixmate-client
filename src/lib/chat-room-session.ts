@@ -16,13 +16,73 @@ export interface BookingChatReadPayload {
   readAt?: string;
 }
 
+export interface BookingChatMessage {
+  id: string;
+  senderId: string;
+  senderRole: "customer" | "technician";
+  text: string;
+  createdAt: string;
+  readAt?: string | null;
+}
+
 export interface BookingChatSessionHandlers {
   bookingId: string;
   onConnected: () => void;
   onDisconnected: () => void;
-  onMessage: (payload: unknown) => void;
+  onMessage: (payload: BookingChatMessage) => void;
   onRead?: (payload: BookingChatReadPayload) => void;
   onJoinError?: (message: string) => void;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Accept only fully-formed message DTOs — anything else is ignored. */
+function toChatMessage(value: unknown): BookingChatMessage | null {
+  if (!isRecord(value)) return null;
+  const { id, senderId, senderRole, text, createdAt, readAt } = value;
+  if (
+    typeof id !== "string" || id.length === 0 ||
+    typeof senderId !== "string" || senderId.length === 0 ||
+    (senderRole !== "customer" && senderRole !== "technician") ||
+    typeof text !== "string" ||
+    typeof createdAt !== "string" || Number.isNaN(Date.parse(createdAt)) ||
+    (readAt !== undefined && readAt !== null && typeof readAt !== "string")
+  ) {
+    return null;
+  }
+  return {
+    id,
+    senderId,
+    senderRole,
+    text,
+    createdAt,
+    ...(readAt === undefined ? {} : { readAt }),
+  };
+}
+
+/**
+ * The server emits `chat:message` with two shapes: the bare message DTO to
+ * the booking room, and a `{ bookingId, message }` envelope to each
+ * participant's user room (for list-level badges) — an active chat panel is
+ * in BOTH rooms and therefore receives both. Normalize them here so the
+ * consumer always sees a single, validated message shape and never crashes
+ * on an envelope it mistook for a message. Envelopes targeting a different
+ * booking are ignored as well.
+ */
+function normalizeChatMessage(
+  payload: unknown,
+  bookingId: string
+): BookingChatMessage | null {
+  if (!isRecord(payload)) return null;
+  if ("message" in payload) {
+    // Envelope — only for this booking, and only when the inner shape is valid.
+    const envelopeBookingId = typeof payload.bookingId === "string" ? payload.bookingId : null;
+    if (envelopeBookingId !== bookingId) return null;
+    return toChatMessage(payload.message);
+  }
+  return toChatMessage(payload);
 }
 
 export function attachBookingChatSession(
@@ -55,7 +115,10 @@ export function attachBookingChatSession(
   };
 
   const handleMessage = (payload: unknown) => {
-    if (active) onMessage(payload);
+    if (!active) return;
+    const message = normalizeChatMessage(payload, bookingId);
+    if (!message) return; // malformed or for another booking — ignore
+    onMessage(message);
   };
 
   const handleRead = (payload: unknown) => {

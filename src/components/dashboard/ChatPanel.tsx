@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { API_BASE } from "@/lib/api";
-import { attachBookingChatSession, getSocket } from "@/lib/socket";
+import { attachBookingChatSession, getSocket, type BookingChatMessage } from "@/lib/socket";
 
 /**
  * Customer ↔ technician booking chat. REST for sending/history (rate-limited
@@ -12,14 +12,7 @@ import { attachBookingChatSession, getSocket } from "@/lib/socket";
  * the verified JWT — never from client-supplied sender ids.
  */
 
-interface ChatMessage {
-  id: string;
-  senderId: string;
-  senderRole: "customer" | "technician";
-  text: string;
-  createdAt: string;
-  readAt?: string | null;
-}
+type ChatMessage = BookingChatMessage;
 
 const PAGE_SIZE = 30;
 
@@ -131,8 +124,18 @@ export default function ChatPanel({
         onJoinError: (message) => {
           if (!cancelled) setLoadError(message);
         },
-        onMessage: (payload) => {
-          const incoming = payload as ChatMessage;
+        onMessage: (incoming) => {
+          // The boundary (attachBookingChatSession) already validates the
+          // shape — belt and braces against a garbled payload ever reaching
+          // state or the render path.
+          if (
+            !incoming ||
+            typeof incoming.id !== "string" ||
+            typeof incoming.senderId !== "string" ||
+            typeof incoming.createdAt !== "string"
+          ) {
+            return;
+          }
           setMessages((current) =>
             current.some((message) => message.id === incoming.id)
               ? current

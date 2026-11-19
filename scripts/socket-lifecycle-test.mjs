@@ -3,7 +3,9 @@
  *
  * Exercises the shared room-session helper and single-socket manager with
  * fake sockets: exact listener cleanup, remount safety, reconnect rejoin,
- * booking switches, sign-out teardown and fresh sign-in.
+ * booking switches, sign-out teardown, fresh sign-in, and normalization of
+ * the two chat:message payload shapes (bare DTO and { bookingId, message }
+ * envelope) plus rejection of malformed payloads.
  *
  * Usage: node scripts/socket-lifecycle-test.mjs
  */
@@ -141,7 +143,14 @@ console.log("\n[reconnect and booking switch]");
     socket.joins.length === 3 && socket.joins[2].bookingId === "booking-b",
     "booking switch joins the new room"
   );
-  socket.fire("chat:message", { id: "m1" });
+  socket.fire("chat:message", {
+    id: "m1",
+    senderId: "user-a",
+    senderRole: "customer",
+    text: "message for booking a",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    readAt: null,
+  });
   socket.fire("chat:read", { bookingId: "booking-a", readBy: "other-user", readAt: "2026-01-01T00:00:00.000Z" });
   socket.fire("chat:read", { bookingId: "booking-b", readBy: "other-user", readAt: "2026-01-01T00:00:01.000Z" });
   check(
@@ -152,6 +161,66 @@ console.log("\n[reconnect and booking switch]");
     oldReads.length === 0 && newReads.length === 1 && newReads[0].bookingId === "booking-b",
     "chat:read updates only the active authorized booking session"
   );
+}
+
+console.log("\n[message shape normalization]");
+{
+  const validMessage = (id, bookingText = "hello") => ({
+    id,
+    senderId: "sender-1",
+    senderRole: "customer",
+    text: bookingText,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    readAt: null,
+  });
+
+  console.log("bare message DTO is accepted:");
+  const socket = new FakeSocket();
+  socket.connected = true;
+  const received = [];
+  attachBookingChatSession(socket, handlers("booking-x", received));
+  socket.fire("chat:message", validMessage("bare-1"));
+  check(
+    received.length === 1 && received[0].id === "bare-1" && received[0].senderRole === "customer",
+    "bare chat:message DTO reaches the handler"
+  );
+
+  console.log("envelope for this booking is unwrapped:");
+  socket.fire("chat:message", {
+    bookingId: "booking-x",
+    message: validMessage("env-1"),
+  });
+  check(
+    received.length === 2 && received[1].id === "env-1",
+    "{ bookingId, message } envelope is unwrapped to the inner message"
+  );
+
+  console.log("envelope for another booking is ignored:");
+  socket.fire("chat:message", {
+    bookingId: "booking-other",
+    message: validMessage("env-2"),
+  });
+  check(received.length === 2, "cross-booking envelope is dropped");
+
+  console.log("malformed payloads are ignored:");
+  for (const [label, bad] of [
+    ["partial stub", { id: "m1" }],
+    ["missing createdAt", { id: "m2", senderId: "s", senderRole: "customer", text: "x" }],
+    ["invalid createdAt", { ...validMessage("m3"), createdAt: "not-a-date" }],
+    ["bad senderRole", { ...validMessage("m4"), senderRole: "admin" }],
+    ["non-string text", { ...validMessage("m5"), text: 42 }],
+    ["non-object", "garbage"],
+    ["null", null],
+    ["envelope, malformed inner", { bookingId: "booking-x", message: { id: "env-3" } }],
+    ["envelope, missing bookingId", { message: validMessage("env-4") }],
+  ]) {
+    socket.fire("chat:message", bad);
+    check(received.length === 2, `${label} -> ignored`);
+  }
+
+  console.log("a fully-formed but unknown room message still passes through:");
+  socket.fire("chat:message", validMessage("bare-2"));
+  check(received.length === 3 && received[2].id === "bare-2", "valid bare message accepted after malformed noise");
 }
 
 console.log("\n[sign-out / sign-in]");

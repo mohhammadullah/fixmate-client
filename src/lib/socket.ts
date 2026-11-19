@@ -53,3 +53,4 @@ export function disconnectSocket(): void {
 }
 
 export { attachBookingChatSession } from "./chat-room-session";
+export type { BookingChatMessage } from "./chat-room-session";

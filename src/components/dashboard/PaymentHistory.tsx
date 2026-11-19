@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { API_BASE } from "@/lib/api";
+import { canRequestRefund, refundStateLabel } from "@/lib/refund-eligibility";
+import type { CustomerRefund } from "@/lib/payments";
+import RefundRequestDialog from "@/components/dashboard/RefundRequestDialog";
 
 /** Types — mirror the backend contract exactly.
  *  GET /api/payments/my (verifyToken + verifyCustomer) returns
@@ -28,6 +31,8 @@ export interface CustomerPayment {
   createdAt: string;
   updatedAt: string;
   paidAt?: string;
+  /** Customer-safe refund records from the payment API, when any exist. */
+  refunds?: CustomerRefund[];
 }
 
 export interface PaymentsPagination {
@@ -89,6 +94,43 @@ function requiredEnum<T extends string>(
   return value as T;
 }
 
+const REFUND_STATUSES = ["pending", "succeeded", "failed", "rejected"] as const;
+
+function parseRefund(raw: unknown): CustomerRefund {
+  if (!isRecord(raw)) {
+    throw new PaymentsError("parse", "The server returned an unexpected refund payload.");
+  }
+  const status = raw.status;
+  if (
+    typeof status !== "string" ||
+    !(REFUND_STATUSES as readonly string[]).includes(status) ||
+    typeof raw.id !== "string" ||
+    typeof raw.paymentId !== "string" ||
+    typeof raw.amount !== "number" ||
+    !Number.isFinite(raw.amount) ||
+    typeof raw.amountMinor !== "number" ||
+    !Number.isFinite(raw.amountMinor) ||
+    typeof raw.currency !== "string" ||
+    typeof raw.reason !== "string" ||
+    typeof raw.requestedAt !== "string"
+  ) {
+    throw new PaymentsError("parse", "The server returned an unexpected refund payload.");
+  }
+  return {
+    id: raw.id,
+    paymentId: raw.paymentId,
+    amount: raw.amount,
+    amountMinor: raw.amountMinor,
+    currency: raw.currency,
+    reason: raw.reason,
+    requestedAt: raw.requestedAt,
+    status: status as CustomerRefund["status"],
+    ...(typeof raw.decidedAt === "string" ? { decidedAt: raw.decidedAt } : {}),
+    ...(typeof raw.decisionNote === "string" ? { decisionNote: raw.decisionNote } : {}),
+    ...(typeof raw.failureReason === "string" ? { failureReason: raw.failureReason } : {}),
+  };
+}
+
 function parsePayment(raw: unknown): CustomerPayment {
   if (!isRecord(raw)) {
     throw new PaymentsError("parse", "The server returned an unexpected payment payload.");
@@ -97,6 +139,9 @@ function parsePayment(raw: unknown): CustomerPayment {
   const paidAt = raw.paidAt;
   if (paidAt !== undefined && paidAt !== null && typeof paidAt !== "string") {
     throw new PaymentsError("parse", "The server returned an unexpected payment payload.");
+  }
+  if (raw.refunds !== undefined && !Array.isArray(raw.refunds)) {
+    throw new PaymentsError("parse", "The server returned an unexpected refund payload.");
   }
 
   return {
@@ -108,6 +153,9 @@ function parsePayment(raw: unknown): CustomerPayment {
     createdAt: requiredString(raw, "createdAt"),
     updatedAt: requiredString(raw, "updatedAt"),
     ...(typeof paidAt === "string" ? { paidAt } : {}),
+    ...(Array.isArray(raw.refunds) && raw.refunds.length > 0
+      ? { refunds: raw.refunds.map(parseRefund) }
+      : {}),
   };
 }
 
@@ -419,8 +467,16 @@ function EmptyState() {
 }
 
 
-function PaymentRow({ payment }: { payment: CustomerPayment }) {
+function PaymentRow({
+  payment,
+  onRequestRefund,
+}: {
+  payment: CustomerPayment;
+  onRequestRefund: (payment: CustomerPayment) => void;
+}) {
   const isSucceeded = payment.status === "succeeded";
+  const refundLabel = refundStateLabel(payment.refunds);
+  const refundEligible = canRequestRefund(payment);
 
   return (
     <li>
@@ -447,6 +503,12 @@ function PaymentRow({ payment }: { payment: CustomerPayment }) {
                 ? `Paid ${formatPaymentDate(payment.paidAt)}`
                 : `Opened ${formatPaymentDate(payment.createdAt)}`}
             </p>
+            {refundLabel && (
+              <Badge
+                label={refundLabel}
+                className="border-warning/40 bg-warning-soft text-warning"
+              />
+            )}
           </div>
           <p className="mt-2 truncate text-xs text-muted">
             Reference{" "}
@@ -479,6 +541,15 @@ function PaymentRow({ payment }: { payment: CustomerPayment }) {
           {isSucceeded && (
             <span className="sr-only">Payment succeeded</span>
           )}
+          {refundEligible && (
+            <button
+              type="button"
+              onClick={() => onRequestRefund(payment)}
+              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-heading transition-colors duration-200 hover:bg-surface-muted cursor-pointer active:bg-surface-muted"
+            >
+              Request refund
+            </button>
+          )}
         </div>
       </article>
     </li>
@@ -489,6 +560,7 @@ function PaymentRow({ payment }: { payment: CustomerPayment }) {
 export default function PaymentHistory() {
   const [page, setPage] = useState(1);
   const [reloadToken, setReloadToken] = useState(0);
+  const [refundTarget, setRefundTarget] = useState<CustomerPayment | null>(null);
 
   const [state, setState] = useState<
     | { phase: "loading" }
@@ -564,6 +636,13 @@ export default function PaymentHistory() {
     setPage(nextPage);
   }
 
+  // Close only after the server confirmed the request, then re-fetch so the
+  // pending state shown to the customer comes from the authoritative API.
+  function handleRefundSuccess() {
+    setRefundTarget(null);
+    reload();
+  }
+
   const totalItems = state.phase === "success" ? state.data.pagination.totalItems : null;
 
   return (
@@ -619,7 +698,11 @@ export default function PaymentHistory() {
           <>
             <ul className="flex flex-col gap-4">
               {state.data.items.map((payment) => (
-                <PaymentRow key={payment.id} payment={payment} />
+                <PaymentRow
+                  key={payment.id}
+                  payment={payment}
+                  onRequestRefund={setRefundTarget}
+                />
               ))}
             </ul>
 
@@ -681,6 +764,16 @@ export default function PaymentHistory() {
           </>
         )}
       </div>
+
+      {refundTarget && (
+        <RefundRequestDialog
+          paymentId={refundTarget.id}
+          amount={refundTarget.amount}
+          currency={refundTarget.currency}
+          onDismiss={() => setRefundTarget(null)}
+          onSuccess={handleRefundSuccess}
+        />
+      )}
     </div>
   );
 }

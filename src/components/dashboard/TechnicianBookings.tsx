@@ -33,7 +33,6 @@ type StatusFilter = BookingStatus | "all";
 interface TechnicianBooking {
   _id: string;
   customerName: string;
-  customerEmail: string;
   serviceTitle: string;
   serviceCategory: string;
   serviceLocation: string;
@@ -150,8 +149,6 @@ function parseBooking(raw: unknown): TechnicianBooking {
     _id: requiredString(raw, "_id"),
     customerName:
       typeof raw.customerName === "string" && raw.customerName.length > 0 ? raw.customerName : "Customer",
-    customerEmail:
-      typeof raw.customerEmail === "string" ? raw.customerEmail : "",
     serviceTitle: requiredString(raw, "serviceTitle"),
     serviceCategory:
       typeof raw.serviceCategory === "string" ? raw.serviceCategory : "Service",

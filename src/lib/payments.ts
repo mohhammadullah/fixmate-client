@@ -153,3 +153,159 @@ export async function createCheckoutSession(bookingId: string): Promise<string> 
 
   return url;
 }
+
+/* --------------------------- Customer refunds --------------------------- */
+
+export type RefundStatus = "pending" | "succeeded" | "failed" | "rejected";
+
+/** Customer-safe refund view from POST /api/payments/:paymentId/refunds. */
+export interface CustomerRefund {
+  id: string;
+  paymentId: string;
+  amountMinor: number;
+  amount: number;
+  currency: string;
+  reason: string;
+  status: RefundStatus;
+  requestedAt: string;
+  decidedAt?: string;
+  decisionNote?: string;
+  failureReason?: string;
+}
+
+export type RefundRequestErrorKind =
+  | "unauthorized"
+  | "network"
+  | "server"
+  | "parse"
+  | "validation"
+  | "conflict"
+  | "notfound";
+
+export class RefundRequestError extends Error {
+  readonly kind: RefundRequestErrorKind;
+  constructor(kind: RefundRequestErrorKind, message: string) {
+    super(message);
+    this.name = "RefundRequestError";
+    this.kind = kind;
+  }
+}
+
+const REFUND_STATUSES: readonly RefundStatus[] = [
+  "pending",
+  "succeeded",
+  "failed",
+  "rejected",
+];
+
+function parseRefund(data: unknown): CustomerRefund {
+  if (!isRecord(data) || typeof data.id !== "string" || !data.id) {
+    throw new RefundRequestError("parse", "The server returned an unexpected refund response.");
+  }
+  const status = data.status;
+  if (typeof status !== "string" || !REFUND_STATUSES.includes(status as RefundStatus)) {
+    throw new RefundRequestError("parse", "The server returned an unexpected refund status.");
+  }
+  if (
+    typeof data.amountMinor !== "number" ||
+    !Number.isFinite(data.amountMinor) ||
+    typeof data.amount !== "number" ||
+    !Number.isFinite(data.amount) ||
+    typeof data.currency !== "string" ||
+    typeof data.reason !== "string" ||
+    typeof data.paymentId !== "string" ||
+    typeof data.requestedAt !== "string"
+  ) {
+    throw new RefundRequestError("parse", "The server returned an unexpected refund response.");
+  }
+  return {
+    id: data.id,
+    paymentId: data.paymentId,
+    amountMinor: data.amountMinor,
+    amount: data.amount,
+    currency: data.currency,
+    reason: data.reason,
+    status: status as RefundStatus,
+    requestedAt: data.requestedAt,
+    ...(typeof data.decidedAt === "string" ? { decidedAt: data.decidedAt } : {}),
+    ...(typeof data.decisionNote === "string" ? { decisionNote: data.decisionNote } : {}),
+    ...(typeof data.failureReason === "string" ? { failureReason: data.failureReason } : {}),
+  };
+}
+
+/** POST /api/payments/:paymentId/refunds — the customer's own succeeded
+ *  payment only. The browser sends just the reason; the server computes the
+ *  amount, currency, ownership and idempotency. */
+export async function requestCustomerRefund(
+  paymentId: string,
+  reason: string
+): Promise<CustomerRefund> {
+  let token: string;
+  try {
+    token = await fetchAccessToken();
+  } catch (error) {
+    if (error instanceof CheckoutSessionError) {
+      const kind: RefundRequestErrorKind =
+        error.kind === "unauthorized" ? "unauthorized" : error.kind === "network" ? "network" : "server";
+      throw new RefundRequestError(kind, error.message);
+    }
+    throw new RefundRequestError("network", "Couldn't verify your session. Try again.");
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/api/payments/${encodeURIComponent(paymentId)}/refunds`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({ reason }),
+    });
+  } catch {
+    throw new RefundRequestError(
+      "network",
+      "Couldn't reach the FixMate server. Check your connection and try again."
+    );
+  }
+
+  let body: unknown = null;
+  try {
+    body = await response.json();
+  } catch {
+    // Non-JSON response — handled by the status checks below.
+  }
+
+  const serverMessage =
+    isRecord(body) && typeof body.message === "string" && body.message.length > 0 && body.message.length <= 200
+      ? body.message
+      : null;
+
+  if (response.status === 401 || response.status === 403) {
+    throw new RefundRequestError("unauthorized", "Your session has expired. Sign in again.");
+  }
+  if (response.status === 400) {
+    const issue =
+      isRecord(body) && Array.isArray(body.errors) && body.errors.length > 0 && isRecord(body.errors[0])
+        ? body.errors[0].message
+        : null;
+    throw new RefundRequestError(
+      "validation",
+      typeof issue === "string" && issue.length > 0 && issue.length <= 200
+        ? issue
+        : serverMessage ?? "Check the reason and try again."
+    );
+  }
+  if (response.status === 404) {
+    throw new RefundRequestError("notfound", serverMessage ?? "Payment not found.");
+  }
+  if (response.status === 409) {
+    throw new RefundRequestError("conflict", serverMessage ?? "This payment can't be refunded right now.");
+  }
+  if (!response.ok) {
+    throw new RefundRequestError("server", serverMessage ?? "Couldn't submit the refund request. Try again.");
+  }
+
+  return parseRefund(isRecord(body) ? body.data : null);
+}

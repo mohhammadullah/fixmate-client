@@ -30,20 +30,14 @@ export const PAYMENT_STATUSES = ["unpaid", "paid", "refunded"] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
 export interface CustomerBooking {
+  /** Public hex id from the safe booking DTO (never a raw Mongo ObjectId). */
   _id: string;
-  serviceId: string;
-  customerId: string;
-  technicianId: string;
-  customerName: string;
-  customerEmail: string;
   technicianName: string;
-  technicianEmail: string;
   serviceTitle: string;
   serviceCategory: AnyServiceCategory;
   serviceLocation: string;
   serviceImage: string;
   hourlyRate: number;
-  securityDeposit: number;
   problemDescription: string;
   status: BookingStatus;
   paymentStatus: PaymentStatus;
@@ -161,22 +155,12 @@ function parseBooking(raw: unknown): CustomerBooking {
   }
   return {
     _id: requiredString(raw, "_id"),
-    serviceId: requiredString(raw, "serviceId"),
-    customerId: requiredString(raw, "customerId"),
-    technicianId: requiredString(raw, "technicianId"),
-    customerName: requiredString(raw, "customerName"),
-    customerEmail: requiredString(raw, "customerEmail"),
     technicianName: requiredString(raw, "technicianName"),
-    technicianEmail: requiredString(raw, "technicianEmail"),
     serviceTitle: requiredString(raw, "serviceTitle"),
     serviceCategory: requiredEnum(raw, "serviceCategory", ALL_SERVICE_CATEGORIES),
     serviceLocation: requiredString(raw, "serviceLocation"),
     serviceImage: typeof raw.serviceImage === "string" ? raw.serviceImage.trim() : "",
     hourlyRate: requiredFiniteNumber(raw, "hourlyRate"),
-    securityDeposit:
-      typeof raw.securityDeposit === "number" && Number.isFinite(raw.securityDeposit)
-        ? raw.securityDeposit
-        : 0,
     problemDescription:
       typeof raw.problemDescription === "string" ? raw.problemDescription : "",
     status: requiredEnum(raw, "status", BOOKING_STATUSES),

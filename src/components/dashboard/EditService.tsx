@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import ServiceImageUpload from "@/components/dashboard/ServiceImageUpload";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
@@ -243,11 +244,11 @@ function parseService(raw: unknown): ServiceData {
   };
 }
 
-async function fetchOwnServices(signal: AbortSignal): Promise<ServiceData[]> {
+async function fetchOwnService(serviceId: string, signal: AbortSignal): Promise<ServiceData> {
   const token = await fetchAccessToken();
   let response: Response;
   try {
-    response = await fetch(`${API_BASE}/api/services/my?page=1&limit=100`, {
+    response = await fetch(`${API_BASE}/api/services/my/${encodeURIComponent(serviceId)}`, {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
       credentials: "include",
@@ -264,17 +265,33 @@ async function fetchOwnServices(signal: AbortSignal): Promise<ServiceData[]> {
     throw new EditServiceError("forbidden", "Technician access only. This account isn't allowed to edit services.");
   }
   let body: unknown = null;
-  try { body = await response.json(); } catch { /* handled below */ }
+  try {
+    body = await response.json();
+  } catch {
+    /* handled below */
+  }
+  if (response.status === 400) {
+    const message = isRecord(body) && typeof body.message === "string" && body.message.length <= 200
+      ? body.message
+      : "The service link is invalid.";
+    throw new EditServiceError("notfound", message);
+  }
+  if (response.status === 404) {
+    const message = isRecord(body) && typeof body.message === "string" && body.message.length <= 200
+      ? body.message
+      : "Service not found. It may have been removed or is no longer available to you.";
+    throw new EditServiceError("notfound", message);
+  }
   if (!response.ok) {
     const message = isRecord(body) && typeof body.message === "string" && body.message.length <= 200
       ? body.message
-      : "The server couldn't load your services. Please try again.";
+      : "The server couldn't load your service. Please try again.";
     throw new EditServiceError("server", message);
   }
-  if (!isRecord(body) || body.success !== true || !Array.isArray(body.data)) {
-    throw new EditServiceError("server", "The server returned an unexpected services payload.");
+  if (!isRecord(body) || body.success !== true || !isRecord(body.data)) {
+    throw new EditServiceError("server", "The server returned an unexpected service payload.");
   }
-  return body.data.map(parseService);
+  return parseService(body.data);
 }
 
 async function patchService(id: string, payload: Record<string, unknown>): Promise<string> {
@@ -519,45 +536,54 @@ function EditServiceForm({ serviceId, service }: { serviceId: string; service: S
       }
 
       // Only client-editable fields — no technicianId, no approvalStatus.
-      const payload: Record<string, unknown> = {};
-      if (values.title !== undefined) payload.title = values.title.trim();
-      if (values.category !== undefined) payload.category = values.category;
-      if (values.description !== undefined) payload.description = values.description.trim();
-      if (values.overview !== undefined) payload.overview = values.overview.trim();
-      if (values.hourlyRate) payload.hourlyRate = Number(values.hourlyRate);
-      if (values.securityDeposit) payload.securityDeposit = Number(values.securityDeposit);
-      if (values.maxCapacity) payload.maxCapacity = Number.parseInt(values.maxCapacity, 10);
-      if (values.location !== undefined) payload.location = values.location.trim();
+      // Send the current form values so unchanged editable fields are preserved
+      // and description/overview remain correctly populated.
+      const payload: Record<string, unknown> = {
+        title: (values.title ?? "").trim(),
+        category: values.category ?? "",
+        description: (values.description ?? "").trim(),
+        overview: (values.overview ?? "").trim(),
+        hourlyRate: Number(values.hourlyRate),
+        securityDeposit: Number(values.securityDeposit),
+        maxCapacity: Number.parseInt(values.maxCapacity ?? "", 10),
+        location: (values.location ?? "").trim(),
+        amenities: effectiveAmenities,
+      };
       // An empty image means "keep the current one" — omit it entirely so the
       // backend's strict image rule (min 1 char) is not violated.
       if (values.image !== undefined && values.image.trim().length > 0) {
         payload.image = values.image.trim();
       }
-      if (effectiveAmenities.length > 0) payload.amenities = effectiveAmenities;
 
       const message = await patchService(serviceId, payload);
       setUpdated(message);
+      toast.success(message);
     } catch (error) {
       if (error instanceof EditServiceError) {
         if (error.kind === "unauthorized" || error.kind === "forbidden") {
           setSessionError({ kind: error.kind, message: error.message });
+          toast.error(error.message);
         } else if (error.kind === "validation") {
           const mapped: FieldErrors = {};
           for (const issue of error.issues) {
             if (!mapped[issue.field]) mapped[issue.field] = issue.message;
           }
           setErrors(mapped);
-          setFormError(
+          const message =
             error.issues.length > 0
               ? "The server rejected some details — the highlighted fields need your attention."
-              : error.message
-          );
+              : error.message;
+          setFormError(message);
+          toast.error(message);
           focusFirstInvalid(mapped);
         } else {
           setFormError(error.message);
+          toast.error(error.message);
         }
       } else {
-        setFormError("Something went wrong while editing your service. Please try again.");
+        const message = "Something went wrong while editing your service. Please try again.";
+        setFormError(message);
+        toast.error(message);
       }
     } finally {
       submitInFlightRef.current = false;
@@ -744,10 +770,10 @@ export default function EditService({ serviceId }: { serviceId: string }) {
     if (isPending || !user || role !== "technician") return;
     const controller = new AbortController();
     let cancelled = false;
-    fetchOwnServices(controller.signal)
-      .then((items) => {
+    fetchOwnService(serviceId, controller.signal)
+      .then((item) => {
         if (cancelled) return;
-        setService(items.find((item) => item.id === serviceId) ?? null);
+        setService(item);
         setLoadError(null);
         setLoading(false);
       })
@@ -755,13 +781,30 @@ export default function EditService({ serviceId }: { serviceId: string }) {
         if (cancelled) return;
         if (error instanceof DOMException && error.name === "AbortError") return;
         if (error instanceof EditServiceError) {
-          if (error.kind === "unauthorized" || error.kind === "forbidden" || error.kind === "server" || error.kind === "network") {
+          if (error.kind === "notfound") {
+            setService(null);
+            setLoadError(null);
+            setLoading(false);
+            return;
+          }
+          if (
+            error.kind === "unauthorized" ||
+            error.kind === "forbidden" ||
+            error.kind === "server" ||
+            error.kind === "network"
+          ) {
             setLoadError({ kind: error.kind, message: error.message });
+            if (error.kind === "server" || error.kind === "network") {
+              toast.error(error.message);
+            }
           } else {
             setLoadError({ kind: "server", message: error.message });
+            toast.error(error.message);
           }
         } else {
-          setLoadError({ kind: "server", message: "Something went wrong while loading your services. Please try again." });
+          const message = "Something went wrong while loading your service. Please try again.";
+          setLoadError({ kind: "server", message });
+          toast.error(message);
         }
         setLoading(false);
       });
@@ -804,7 +847,7 @@ export default function EditService({ serviceId }: { serviceId: string }) {
     );
   }
   if (!service) {
-    return <ErrorPanel title="Service not found" message="We couldn't find this service. It may have been removed, or the link is incorrect. It must be one of your own services." />;
+    return <ErrorPanel title="Service not found" message="We couldn't find this service. It may have been removed, the link is invalid, or it isn't one of your own services." />;
   }
   return <EditServiceForm serviceId={serviceId} service={service} />;
 }

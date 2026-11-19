@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Mail, MapPin, Phone } from "lucide-react";
 import { SERVICE_CATEGORIES, categoryHref } from "@/lib/service-categories";
 
 const QUICK_LINKS = [
@@ -15,35 +16,46 @@ const CATEGORY_LINKS = SERVICE_CATEGORIES.map((label) => ({
   href: categoryHref(label),
 }));
 
-const CONTACT = [
+interface ContactItem {
+  label: string;
+  href: string | null;
+  /** Lucide icon for standard glyphs; inline SVG only for the LinkedIn brand mark. */
+  icon: React.ReactNode;
+  ariaLabel?: string;
+  external?: boolean;
+}
+
+const CONTACT: ContactItem[] = [
   {
-    label: "support@fixmate.com",
-    href: "mailto:support@fixmate.com",
-    icon: (
-      // Mail
-      <path d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm0 1 8 6 8-6" />
-    ),
+    label: "gmhgazi92@gmail.com",
+    href: "mailto:gmhgazi92@gmail.com",
+    icon: <Mail className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />,
+    ariaLabel: "Email gmhgazi92@gmail.com",
   },
   {
-    label: "+880 1XXX-XXXXXX",
-    href: "tel:+8801000000000",
-    icon: (
-      // Phone
-      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 11.91a16 16 0 0 0 6 6l3.27-1.22a2 2 0 0 1 2.11.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z" />
-    ),
+    label: "01952182385",
+    href: "tel:+8801952182385",
+    icon: <Phone className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />,
+    ariaLabel: "Call 01952182385",
   },
   {
-    label: "Bangladesh",
+    label: "Khulna, Bangladesh",
     href: null,
-    icon: (
-      // Map pin
-      <>
-        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z" />
-        <circle cx="12" cy="10" r="3" />
-      </>
-    ),
+    icon: <MapPin className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />,
   },
-] as const;
+  {
+    label: "LinkedIn / gazi-mohammadullah",
+    href: "https://www.linkedin.com/in/gazi-mohammadullah",
+    // Lucide has no brand glyphs in this build — inline the recognizable LinkedIn "in" mark.
+    icon: (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
+        <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56z" />
+      </svg>
+    ),
+    ariaLabel: "Gazi Mohammadullah on LinkedIn",
+    external: true,
+  },
+];
 
 const linkClass =
   "inline-flex w-fit cursor-pointer rounded-sm text-sm text-muted transition-colors duration-200 hover:text-heading hover:underline hover:underline-offset-4 active:text-accent-strong dark:active:text-accent";
@@ -139,21 +151,17 @@ export default async function Footer() {
                     aria-hidden="true"
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-surface-muted text-accent-strong dark:text-accent"
                   >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="16"
-                      height="16"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      {item.icon}
-                    </svg>
+                    {item.icon}
                   </span>
                   {item.href ? (
-                    <a href={item.href} className={linkClass}>
+                    <a
+                      href={item.href}
+                      {...(item.external
+                        ? { target: "_blank", rel: "noopener noreferrer" }
+                        : {})}
+                      aria-label={item.ariaLabel ?? item.label}
+                      className={`${linkClass} break-all`}
+                    >
                       {item.label}
                     </a>
                   ) : (
@@ -173,7 +181,7 @@ export default async function Footer() {
           <nav aria-label="Legal">
             <ul className="flex items-center gap-6">
               <li>
-                <Link href="/privacy-policy" className={linkClass}>
+                <Link href="/privacy" className={linkClass}>
                   Privacy Policy
                 </Link>
               </li>

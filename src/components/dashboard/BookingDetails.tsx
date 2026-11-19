@@ -297,7 +297,7 @@ function parseBookingDetails(raw: unknown): BookingDetails {
       title: requiredString(service, "title"),
       category: requiredEnum(service, "category", SERVICE_CATEGORIES),
       location: requiredString(service, "location"),
-      image: typeof service.image === "string" ? service.image : "",
+      image: typeof service.image === "string" ? service.image.trim() : "",
       hourlyRate: requiredFiniteNumber(service, "hourlyRate"),
     },
     technician: {
@@ -825,8 +825,9 @@ function BookingImage({ booking }: { booking: BookingDetails }) {
         src={booking.service.image}
         alt={booking.service.title}
         loading="lazy"
+        decoding="async"
         onError={() => setImageFailed(true)}
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-cover object-center"
       />
     </div>
   );

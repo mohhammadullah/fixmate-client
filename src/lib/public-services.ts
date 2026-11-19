@@ -59,7 +59,7 @@ export function parseServiceSummary(raw: unknown): ServiceCardData | null {
     title,
     category,
     location,
-    image: typeof raw.image === "string" ? raw.image : "",
+    image: typeof raw.image === "string" ? raw.image.trim() : "",
     hourlyRate,
     maxCapacity,
     amenities: Array.isArray(raw.amenities)

@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import ServicesListing from "@/components/services/ServicesListing";
 
 export const metadata: Metadata = {
-  title: "Repair Services | FixMate",
+  title: "Repair Services",
   description:
     "Explore repair solutions for smartphones, laptops, refrigerators, AC units, TVs and home appliances with FixMate.",
 };

@@ -4,18 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { ROLE_LABELS, type DashboardRole } from "@/components/dashboard/DashboardSidebar";
+import ProfileAvatar from "@/components/ui/ProfileAvatar";
 import NotificationBell from "@/components/dashboard/NotificationBell";
-
-/** Derive up to two initials from the user's name, falling back to the
- *  email address, for the avatar fallback. */
-function initialsFor(name?: string | null, email?: string | null): string {
-  const base = (name?.trim() || email?.trim() || "").trim();
-  if (!base) return "?";
-  const parts = base.split(/[\s@._-]+/).filter(Boolean);
-  const first = parts[0]?.[0] ?? "";
-  const second = parts.length > 1 ? parts[parts.length - 1][0] : "";
-  return (first + second).toUpperCase();
-}
 
 /** Map a Better Auth sign-out failure (or a thrown network error) to a
  *  meaningful, user-facing message. */
@@ -93,7 +83,7 @@ export default function DashboardHeader({
   sidebarOpen,
   onMenuToggle,
 }: {
-  user: { name?: string | null; email?: string | null };
+  user: { name?: string | null; email?: string | null; image?: string | null };
   role: DashboardRole | null;
   sidebarOpen: boolean;
   onMenuToggle: () => void;
@@ -179,12 +169,13 @@ export default function DashboardHeader({
         <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
           <NotificationBell />
           <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
-            <span
-              aria-hidden="true"
-              title={user.email ?? undefined}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-500 text-xs font-bold text-accent-foreground ring-2 ring-accent-500/30 sm:h-10 sm:w-10"
-            >
-              {initialsFor(user.name, user.email)}
+            <span title={user.email ?? undefined} className="inline-flex shrink-0">
+              <ProfileAvatar
+                image={user.image}
+                name={user.name}
+                email={user.email}
+                className="h-9 w-9 text-xs ring-2 ring-accent-500/30 sm:h-10 sm:w-10"
+              />
             </span>
             <span className="min-w-0">
               <span className="block max-w-[8.5rem] truncate text-sm font-semibold leading-tight text-heading sm:max-w-[12rem]">

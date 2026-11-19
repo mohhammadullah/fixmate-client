@@ -110,7 +110,7 @@ function parseBooking(raw: unknown): AdminBooking {
     serviceTitle: requiredString(raw, "serviceTitle"),
     serviceCategory: typeof raw.serviceCategory === "string" ? raw.serviceCategory : "",
     serviceLocation: typeof raw.serviceLocation === "string" ? raw.serviceLocation : "",
-    serviceImage: typeof raw.serviceImage === "string" ? raw.serviceImage : "",
+    serviceImage: typeof raw.serviceImage === "string" ? raw.serviceImage.trim() : "",
     hourlyRate: typeof raw.hourlyRate === "number" ? raw.hourlyRate : 0,
     securityDeposit: typeof raw.securityDeposit === "number" ? raw.securityDeposit : 0,
     problemDescription: typeof raw.problemDescription === "string" ? raw.problemDescription : "",

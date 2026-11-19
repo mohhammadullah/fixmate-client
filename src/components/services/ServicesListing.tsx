@@ -129,7 +129,7 @@ function parseService(raw: unknown): PublicService {
     title: requiredString(raw, "title"),
     category: category as (typeof CATEGORIES)[number],
     location: requiredString(raw, "location"),
-    image: typeof raw.image === "string" ? raw.image : "",
+    image: typeof raw.image === "string" ? raw.image.trim() : "",
     hourlyRate: requiredFiniteNumber(raw, "hourlyRate"),
     securityDeposit:
       typeof raw.securityDeposit === "number" && Number.isFinite(raw.securityDeposit)
@@ -191,7 +191,7 @@ function parseServicesResponse(body: unknown): ServicesPageData {
   };
 }
 
-/** Public endpoint â€” never sends credentials or a JWT. */
+/** Public endpoint — never sends credentials or a JWT. */
 
 interface FetchOptions {
   page: number;
@@ -235,7 +235,7 @@ async function fetchServices(options: FetchOptions): Promise<ServicesPageData> {
   try {
     body = await response.json();
   } catch {
-    // Handled below â€” a non-JSON error page or empty body.
+    // Handled below — a non-JSON error page or empty body.
   }
 
   if (!response.ok) {
@@ -280,17 +280,17 @@ function ServicesSkeleton() {
   return (
     <div
       role="status"
-      aria-label="Loading servicesâ€¦"
+      aria-label="Loading services…"
       className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
     >
-      <span className="sr-only">Loading servicesâ€¦</span>
+      <span className="sr-only">Loading services…</span>
       {Array.from({ length: 6 }, (_, index) => (
         <div
           key={index}
           aria-hidden="true"
           className="overflow-hidden rounded-2xl border border-border bg-surface shadow-xs"
         >
-          <div className="h-48 animate-pulse bg-surface-muted" />
+          <div className="aspect-[16/10] animate-pulse bg-surface-muted" />
           <div className="space-y-3 p-5">
             <div className="h-3 w-24 animate-pulse rounded bg-surface-muted" />
             <div className="h-5 w-3/4 animate-pulse rounded bg-surface-muted" />
@@ -597,7 +597,7 @@ export default function ServicesListing({
                 setSearch(event.target.value);
                 resetPage();
               }}
-              placeholder="Search servicesâ€¦"
+              placeholder="Search services, devices, or repairs..."
               className={`${fieldClass} pl-11 pr-4`}
             />
           </div>

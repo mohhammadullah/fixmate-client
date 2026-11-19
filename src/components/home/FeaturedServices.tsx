@@ -33,7 +33,7 @@ export function FeaturedServicesSkeleton() {
               aria-hidden="true"
               className="overflow-hidden rounded-2xl border border-border bg-surface shadow-xs"
             >
-              <div className="h-48 animate-pulse bg-surface-muted" />
+              <div className="aspect-[16/10] animate-pulse bg-surface-muted" />
               <div className="space-y-3 p-5">
                 <div className="h-5 w-3/4 animate-pulse rounded bg-surface-muted" />
                 <div className="h-4 w-1/2 animate-pulse rounded bg-surface-muted" />
@@ -47,7 +47,7 @@ export function FeaturedServicesSkeleton() {
           ))}
         </div>
         <span role="status" className="sr-only">
-          Loading featured servicesâ€¦
+          Loading featured services…
         </span>
       </div>
     </section>
@@ -77,7 +77,7 @@ export default async function FeaturedServices() {
               Featured Repair Services
             </h2>
             <p className="mt-2 text-base text-muted">
-              Approved, available services from verified technicians â€” with
+              Approved, available services from verified technicians — with
               upfront hourly rates and genuine customer ratings.
             </p>
           </div>

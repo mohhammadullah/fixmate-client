@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { initialsFor } from "@/lib/initials";
+import ServiceImageFallback from "@/components/ui/ServiceImageFallback";
 
 /**
  * Shared public service card — renders a real approved + available service
@@ -37,7 +38,8 @@ function formatAmount(value: number): string {
 
 export default function ServiceCard({ service }: { service: ServiceCardData }) {
   const [imageFailed, setImageFailed] = useState(false);
-  const showImage = service.image.length > 0 && !imageFailed;
+  const imageUrl = service.image.trim();
+  const showImage = imageUrl.length > 0 && !imageFailed;
   const shownAmenities = service.amenities.slice(0, 3);
   const hiddenAmenities = service.amenities.length - shownAmenities.length;
   const technicianName = service.technicianName.trim() || "FixMate Technician";
@@ -49,31 +51,20 @@ export default function ServiceCard({ service }: { service: ServiceCardData }) {
       <Link
         href={`/services/${service._id}`}
         aria-label={`View details for ${service.title}`}
-        className="relative block h-48 w-full overflow-hidden bg-navy-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500"
+        className="relative block aspect-[16/10] w-full overflow-hidden bg-navy-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500"
       >
         {showImage ? (
           // eslint-disable-next-line @next/next/no-img-element -- backend image URLs are remote and not known at build time, so next/image remotePatterns can't be configured.
           <img
-            src={service.image}
+            src={imageUrl}
             alt={service.title}
             loading="lazy"
+            decoding="async"
             onError={() => setImageFailed(true)}
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+            className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.04]"
           />
         ) : (
-          <div aria-hidden="true" className="absolute inset-0 flex items-center justify-center">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-12 w-12 text-accent-400/60"
-            >
-              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-            </svg>
-          </div>
+          <ServiceImageFallback />
         )}
         <span className="absolute left-4 top-4 rounded-full border border-white/15 bg-navy-950/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-accent-100 backdrop-blur-sm">
           {service.category}

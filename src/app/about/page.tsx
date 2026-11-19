@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "About Us | FixMate",
+  title: "About Us",
   description:
     "FixMate connects customers with technicians for device and home appliance repairs — making repair services easier, more accessible and reliable.",
 };

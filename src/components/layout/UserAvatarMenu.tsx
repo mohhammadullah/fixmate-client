@@ -5,7 +5,7 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-import { initialsFor } from "@/lib/initials";
+import ProfileAvatar from "@/components/ui/ProfileAvatar";
 
 export interface SessionUserLike {
   name?: string | null;
@@ -70,40 +70,22 @@ function SignOutIcon({ className }: { className?: string }) {
   );
 }
 
-/** Avatar image with graceful fallback to initials-based avatar. */
+/** Avatar image with graceful fallback to a polished initials-on-navy avatar. */
 export function UserAvatar({
   user,
-  className = "",
+  className = "h-9 w-9 text-[11px]",
 }: {
   user: SessionUserLike;
   className?: string;
 }) {
-  const [imageFailed, setImageFailed] = useState(false);
   const name = user.name?.trim() ?? "";
-  const image = typeof user.image === "string" && user.image.trim().length > 0 ? user.image : null;
-  const showImage = image !== null && !imageFailed;
-
-  if (showImage) {
-    return (
-      // Plain <img> — remote avatar hosts are not configured for next/image.
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={image}
-        alt={name ? `${name}'s profile photo` : "Profile photo"}
-        referrerPolicy="no-referrer"
-        onError={() => setImageFailed(true)}
-        className={`h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-inset ring-border-strong ${className}`}
-      />
-    );
-  }
-
   return (
-    <span
-      aria-hidden="true"
-      className={`flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-navy-800 text-[11px] font-bold tracking-wide text-accent-400 ring-1 ring-inset ring-accent-400/30 dark:bg-navy-700 dark:text-accent-400 ${className}`}
-    >
-      {initialsFor(name, user.email)}
-    </span>
+    <ProfileAvatar
+      image={typeof user.image === "string" ? user.image : null}
+      name={name}
+      email={user.email}
+      className={`${className} ring-1 ring-inset ring-border-strong`}
+    />
   );
 }
 
@@ -268,7 +250,7 @@ export default function UserAvatarMenu({ user }: { user: SessionUserLike }) {
           className="absolute right-0 top-full z-50 mt-2 w-64 origin-top-right rounded-2xl border border-border bg-surface p-2 shadow-lg"
         >
           <div className="flex items-center gap-3 border-b border-border px-3 pb-3 pt-2">
-            <UserAvatar user={user} className="h-10 w-10" />
+            <UserAvatar user={user} className="h-10 w-10 text-xs" />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-heading" title={displayName}>
                 {displayName}
@@ -332,7 +314,7 @@ export function UserAccountSection({ user }: { user: SessionUserLike }) {
   return (
     <div className="mt-4 border-t border-border pt-4">
       <div className="flex items-center gap-3 px-4 pb-3 pt-1">
-        <UserAvatar user={user} className="h-11 w-11" />
+        <UserAvatar user={user} className="h-11 w-11 text-xs" />
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-heading" title={displayName}>
             {displayName}

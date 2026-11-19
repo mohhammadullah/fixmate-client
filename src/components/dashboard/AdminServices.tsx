@@ -8,6 +8,7 @@ import {
   ALL_SERVICE_CATEGORIES as SERVICE_CATEGORIES,
   type AnyServiceCategory as ServiceCategory,
 } from "@/lib/service-categories";
+import ServiceImageFallback from "@/components/ui/ServiceImageFallback";
 
 /** Admin service moderation — GET /api/admin/services (admin only),
  *  plus PATCH /api/services/:id/approve | /reject. */
@@ -100,7 +101,7 @@ function parseService(raw: unknown): AdminService {
     securityDeposit: typeof raw.securityDeposit === "number" ? raw.securityDeposit : 0,
     maxCapacity: requiredNumber(raw, "maxCapacity"),
     location: typeof raw.location === "string" ? raw.location : "",
-    image: typeof raw.image === "string" ? raw.image : "",
+    image: typeof raw.image === "string" ? raw.image.trim() : "",
     amenities: Array.isArray(raw.amenities) ? raw.amenities.filter((item): item is string => typeof item === "string") : [],
     approvalStatus,
     availabilityStatus: availability === "unavailable" ? "unavailable" : "available",
@@ -350,7 +351,8 @@ function ServiceCard({
   pendingAction: "approve" | "reject" | null;
 }) {
   const [imageFailed, setImageFailed] = useState(false);
-  const showImage = service.image.length > 0 && !imageFailed;
+  const imageUrl = service.image.trim();
+  const showImage = imageUrl.length > 0 && !imageFailed;
   const isPending = service.approvalStatus === "pending";
   const format = (value: number) => new Intl.NumberFormat("en", { maximumFractionDigits: 2 }).format(value);
 
@@ -359,11 +361,9 @@ function ServiceCard({
       <div className="relative h-40 w-full shrink-0 overflow-hidden bg-navy-900">
         {showImage ? (
           // eslint-disable-next-line @next/next/no-img-element -- backend image URLs are remote and not known at build time, so next/image remotePatterns can't be configured.
-          <img src={service.image} alt={service.title} loading="lazy" onError={() => setImageFailed(true)} className="absolute inset-0 h-full w-full object-cover" />
+          <img src={imageUrl} alt={service.title} loading="lazy" decoding="async" onError={() => setImageFailed(true)} className="absolute inset-0 h-full w-full object-cover object-center" />
         ) : (
-          <div aria-hidden="true" className="absolute inset-0 flex items-center justify-center">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" className="h-12 w-12 text-accent-400/60"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>
-          </div>
+          <ServiceImageFallback />
         )}
         <span className="absolute left-3 top-3 rounded-full border border-white/15 bg-navy-950/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-accent-100 backdrop-blur-sm">{service.category}</span>
         <span className={`absolute right-3 top-3 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${

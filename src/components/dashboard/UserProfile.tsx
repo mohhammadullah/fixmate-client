@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
+import ProfileAvatar from "@/components/ui/ProfileAvatar";
 import {
   ROLE_LABELS,
   type DashboardRole,
@@ -230,15 +231,12 @@ const APPLICATION_STATUS_STYLES: Record<"pending" | "approved" | "rejected", str
   rejected: "border-error/40 bg-error-soft text-error",
 };
 
-function initials(name: string | null, email: string | null): string {
-  const base = (name?.trim() || email?.trim() || "").trim();
-  if (!base) return "?";
-  const parts = base.split(/[\s@._-]+/).filter(Boolean);
-  return ((parts[0]?.[0] ?? "") + (parts.length > 1 ? (parts[parts.length - 1][0] ?? "") : "")).toUpperCase();
-}
-
-
 export default function UserProfile() {
+  // The profile photo lives on the session (Better Auth user.image) — the
+  // /api/users/me DTO deliberately doesn't project it — so read it here.
+  const { data: session } = authClient.useSession();
+  const sessionImage = session?.user?.image ?? null;
+
   const [state, setState] = useState<
     | { phase: "loading" }
     | { phase: "error"; error: ProfileError }
@@ -373,10 +371,13 @@ export default function UserProfile() {
           <div className="relative h-24 bg-navy-900">
             <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-accent-500/20 blur-2xl" />
           </div>
-          <div className="-mt-10 px-5 pb-6 sm:px-6">
-            <div aria-hidden="true" className="flex h-20 w-20 items-center justify-center rounded-2xl border-4 border-surface bg-accent-500 text-xl font-bold text-accent-foreground shadow-md">
-              {initials(profile.name, profile.email)}
-            </div>
+          <div className="relative -mt-14 px-5 pb-6 sm:px-6">
+            <ProfileAvatar
+              image={sessionImage}
+              name={profile.name}
+              email={profile.email}
+              className="h-28 w-28 border-4 border-surface text-2xl shadow-lg sm:h-32 sm:w-32 sm:text-3xl"
+            />
             <h2 id="profile-identity-heading" className="mt-3 text-lg font-extrabold tracking-tight text-heading">
               {profile.name ?? "Unnamed account"}
             </h2>

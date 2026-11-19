@@ -229,7 +229,7 @@ function parseService(raw: unknown): ServiceData {
     title: requiredString("title"),
     category: requiredString("category"),
     location: requiredString("location"),
-    image: typeof raw.image === "string" ? raw.image : "",
+    image: typeof raw.image === "string" ? raw.image.trim() : "",
     hourlyRate: requiredNumber("hourlyRate"),
     securityDeposit: typeof raw.securityDeposit === "number" ? raw.securityDeposit : 0,
     maxCapacity: requiredNumber("maxCapacity"),

@@ -281,7 +281,7 @@ export default function ServiceImageUpload({
         <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-2">
           <div className="flex h-16 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-navy-900">
             {/* eslint-disable-next-line @next/next/no-img-element -- preview URLs are either local blob URLs or remote backend URLs not known at build time. */}
-            <img src={preview ?? value} alt="Service image preview" className="h-full w-full object-cover" />
+            <img src={preview ?? value} alt="Service image preview" decoding="async" className="h-full w-full object-cover object-center" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-medium text-heading">

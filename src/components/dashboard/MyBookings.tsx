@@ -171,7 +171,7 @@ function parseBooking(raw: unknown): CustomerBooking {
     serviceTitle: requiredString(raw, "serviceTitle"),
     serviceCategory: requiredEnum(raw, "serviceCategory", ALL_SERVICE_CATEGORIES),
     serviceLocation: requiredString(raw, "serviceLocation"),
-    serviceImage: typeof raw.serviceImage === "string" ? raw.serviceImage : "",
+    serviceImage: typeof raw.serviceImage === "string" ? raw.serviceImage.trim() : "",
     hourlyRate: requiredFiniteNumber(raw, "hourlyRate"),
     securityDeposit:
       typeof raw.securityDeposit === "number" && Number.isFinite(raw.securityDeposit)
@@ -783,8 +783,9 @@ function BookingCard({
               src={booking.serviceImage}
               alt={booking.serviceTitle}
               loading="lazy"
+              decoding="async"
               onError={() => setImageFailed(true)}
-              className="absolute inset-0 h-full w-full object-cover"
+              className="absolute inset-0 h-full w-full object-cover object-center"
             />
           ) : (
             <div

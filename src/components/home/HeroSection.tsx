@@ -12,15 +12,17 @@ import HeroStats, { HeroStatsSkeleton } from "@/components/home/HeroStats";
  */
 export default function HeroSection() {
   return (
-    <section className="relative overflow-hidden border-b border-navy-800 bg-gradient-to-br from-navy-950 via-navy-950 to-navy-900 text-navy-100">
-      {/* Ambient glows — decorative only */}
+    <section className="relative border-b border-navy-800 bg-gradient-to-br from-navy-950 via-navy-950 to-navy-900 text-navy-100">
+      {/* Ambient glows — decorative only; kept strictly inside the section
+          bounds so the hero search suggestions dropdown can freely overflow
+          the section without being clipped. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-32 right-[8%] h-80 w-80 rounded-full bg-accent-500/10 blur-3xl"
+        className="pointer-events-none absolute right-[8%] top-0 h-72 w-72 rounded-full bg-accent-500/10 blur-3xl"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -bottom-40 left-[-10%] h-96 w-96 rounded-full bg-accent-600/[0.07] blur-3xl"
+        className="pointer-events-none absolute bottom-0 left-0 h-80 w-80 rounded-full bg-accent-600/[0.07] blur-3xl"
       />
 
       <div className="container-page relative py-10 sm:py-14 lg:py-16 xl:py-20">

@@ -110,7 +110,7 @@ export default function DashboardLayout({
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <DashboardHeader
-          user={{ name: sessionUser.name, email: sessionUser.email }}
+          user={{ name: sessionUser.name, email: sessionUser.email, image: sessionUser.image }}
           role={role}
           sidebarOpen={sidebarOpen}
           onMenuToggle={() => setSidebarOpen((open) => !open)}

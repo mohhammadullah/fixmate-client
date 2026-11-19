@@ -8,6 +8,7 @@ import {
   ROLE_LABELS,
   type DashboardRole,
 } from "@/components/dashboard/DashboardSidebar";
+import { API_BASE } from "@/lib/api";
 
 /** User profile — GET/PATCH /api/users/me. JWT is fetched per request via Better Auth and never stored/logged/persisted. */
 
@@ -37,7 +38,6 @@ class ProfileError extends Error {
   }
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PHONE_PATTERN = /^[0-9+\-()\s]{5,30}$/;
 
 function isRecord(value: unknown): value is Record<string, unknown> {

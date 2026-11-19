@@ -11,8 +11,8 @@ import {
   SERVICE_CATEGORIES,
   type AnyServiceCategory,
 } from "@/lib/service-categories";
+import { API_BASE } from "@/lib/api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
 /** Types mirror the backend updateServiceSchema (all fields optional).
  *  PATCH /api/services/:id accepts only client-editable fields; the server

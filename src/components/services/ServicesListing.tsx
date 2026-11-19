@@ -8,6 +8,7 @@ import {
   ALL_SERVICE_CATEGORIES,
   normalizeCategoryInput,
 } from "@/lib/service-categories";
+import { API_BASE } from "@/lib/api";
 
 /** Types mirror the public GET /api/services contract (no auth, JWT or
  *  ownership data): only approved + available services, projecting out
@@ -69,7 +70,6 @@ class ServicesError extends Error {
   }
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PAGE_SIZE = 12;
 const SEARCH_DEBOUNCE_MS = 350;
 

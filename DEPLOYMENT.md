@@ -10,7 +10,7 @@ local `.env.local` that is gitignored.
 
 | Variable              | Scope        | Example value                                  | Notes                                                                 |
 | --------------------- | ------------ | ---------------------------------------------- | --------------------------------------------------------------------- |
-| `NEXT_PUBLIC_API_URL` | public (yes) | `http://localhost:5000` (dev) / `https://<backend-domain>` (prod) | Base URL of the backend API. **Public & non-secret** — embedded in the browser bundle. Has no leading slash and must not point to any private/internal host that you do not want revealed. |
+| `NEXT_PUBLIC_API_URL` | public (yes) | `http://localhost:5000` (dev) / `https://<backend-domain>` (prod) | Base URL of the backend API. **Public & non-secret** — embedded in the browser bundle. Has no leading slash and must not point to any private/internal host that you do not want revealed. Required and **HTTPS-only in production builds**; a missing, malformed or HTTP value fails `next build` with a clear error. Only `next dev` falls back to `http://localhost:5000`. |
 
 No server-only variable is read by this project. Anything prefixed with
 `NEXT_PUBLIC_` is **visible to the browser**; never put secrets behind that
@@ -71,6 +71,12 @@ npm start
 Set the same single env var in the host's configuration (or in a gitignored
 file). Ensure the host serves the Next.js routes at their original paths
 (this project does not use `basePath`).
+
+## Configuration verification
+
+`node scripts/api-config-test.mjs` checks the production fail-fast rules for
+`NEXT_PUBLIC_API_URL` (missing, malformed, HTTP, HTTPS, dev fallback) without
+network access or a database. It must pass before a release build.
 
 ## What NOT to do
 

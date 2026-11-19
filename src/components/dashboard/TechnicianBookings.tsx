@@ -12,6 +12,7 @@ import {
   type BookingsPagination,
   type PaymentStatus,
 } from "@/components/dashboard/MyBookings";
+import { API_BASE } from "@/lib/api";
 
 /** Incoming Bookings — GET /api/bookings/technician (verifyToken + verifyTechnician) returns only bookings whose technicianId matches the verified JWT; no technicianId is ever sent. The only booking-details endpoint (GET /api/bookings/:id) is customer-only (verifyCustomer), so no "View Details" action is offered here. */
 
@@ -77,7 +78,6 @@ class TechnicianBookingsError extends Error {
   }
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PAGE_SIZE = 10;
 
 

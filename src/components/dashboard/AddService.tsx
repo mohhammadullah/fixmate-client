@@ -10,6 +10,7 @@ import {
   SERVICE_CATEGORIES,
   type ServiceCategory,
 } from "@/lib/service-categories";
+import { API_BASE } from "@/lib/api";
 
 /** Types — mirror the backend createServiceSchema exactly.
  *
@@ -61,7 +62,6 @@ class AddServiceError extends Error {
   }
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
 // API calls — JWT fetched per request; never stored or logged. Identity comes from the verified JWT only, never from client input.
 

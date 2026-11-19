@@ -9,8 +9,8 @@ import {
   getCommentError,
   isValidRating,
 } from "@/lib/review";
+import { API_BASE } from "@/lib/api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
 /**
  * Customer review form for an eligible (completed, not-yet-reviewed)

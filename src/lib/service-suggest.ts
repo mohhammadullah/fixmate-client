@@ -6,6 +6,7 @@
  */
 
 import { displayCategory } from "@/lib/service-categories";
+import { API_BASE } from "@/lib/api";
 
 export interface ServiceSuggestion {
   id: string;
@@ -20,7 +21,6 @@ export interface ServiceSuggestion {
   };
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const FETCH_LIMIT = 8;
 const MAX_SUGGESTIONS = 6;
 

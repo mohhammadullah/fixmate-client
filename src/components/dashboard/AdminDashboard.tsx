@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
+import { API_BASE } from "@/lib/api";
 
 /** Admin dashboard statistics — GET /api/admin/dashboard/stats. */
 
@@ -36,7 +37,6 @@ class AdminStatsError extends Error {
   }
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

@@ -21,6 +21,7 @@ import { getReviewEligibility } from "@/lib/review";
 import ReviewForm from "@/components/dashboard/ReviewForm";
 import ChatPanel from "@/components/dashboard/ChatPanel";
 import BookingTimeline, { type PublicTimelineEvent } from "@/components/dashboard/BookingTimeline";
+import { API_BASE } from "@/lib/api";
 
 /** Types — mirror the backend Booking Details DTO exactly.
  *  GET /api/bookings/:id (verifyToken + verifyCustomer, customer's own booking)
@@ -100,7 +101,6 @@ class BookingDetailsError extends Error {
   }
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

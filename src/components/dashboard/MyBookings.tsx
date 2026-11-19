@@ -9,6 +9,7 @@ import {
   ALL_SERVICE_CATEGORIES,
   type AnyServiceCategory,
 } from "@/lib/service-categories";
+import { API_BASE } from "@/lib/api";
 
 /** Types mirror the backend contract exactly:
  *  GET /api/bookings/my (verifyToken + verifyCustomer) returns
@@ -91,7 +92,6 @@ class BookingsError extends Error {
   }
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PAGE_SIZE = 12;
 
 function isRecord(value: unknown): value is Record<string, unknown> {

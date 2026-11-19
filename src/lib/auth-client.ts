@@ -1,5 +1,6 @@
 import { createAuthClient } from "better-auth/react";
 import { inferAdditionalFields } from "better-auth/client/plugins";
+import { API_BASE } from "@/lib/api";
 
 /**
  * FixMate authentication client.
@@ -14,7 +15,7 @@ import { inferAdditionalFields } from "better-auth/client/plugins";
  * Never put backend secrets in this file or any NEXT_PUBLIC_* variable.
  */
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000",
+  baseURL: API_BASE,
   plugins: [
     // Mirror the backend's Better Auth `user.additionalFields` (see
     // fixmate-server/src/config/auth.ts) so `signUp.email()` is typed for

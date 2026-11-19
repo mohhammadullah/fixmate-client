@@ -10,6 +10,7 @@ import {
   type BookingStatus,
   type PaymentStatus,
 } from "@/components/dashboard/MyBookings";
+import { API_BASE } from "@/lib/api";
 
 /** Admin all-bookings — read-only view of GET /api/admin/bookings. */
 
@@ -58,7 +59,6 @@ class AdminBookingsError extends Error {
   }
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PAGE_SIZE = 10;
 const DEBOUNCE_MS = 350;
 

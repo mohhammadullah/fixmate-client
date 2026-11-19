@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { API_BASE } from "@/lib/api";
 
 /** Reusable service image upload (ImgBB via server proxy). The JWT is fetched per upload and never stored/logged. */
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 const MAX_BYTES = 5 * 1024 * 1024;
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
 interface UploadResponse {
   url: string;

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
+import { API_BASE } from "@/lib/api";
 
 /** Technician application — a structured subdocument on the Better Auth user document. No role field is ever sent; role changes only happen through admin review. */
 
@@ -33,7 +34,6 @@ class ApplicationError extends Error {
   }
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PHONE_PATTERN = /^[0-9+\-()\s]{5,30}$/;
 
 interface FormValues {

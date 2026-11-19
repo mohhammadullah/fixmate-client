@@ -9,6 +9,7 @@ import {
   type AnyServiceCategory as ServiceCategory,
 } from "@/lib/service-categories";
 import ServiceImageFallback from "@/components/ui/ServiceImageFallback";
+import { API_BASE } from "@/lib/api";
 
 /** Admin service moderation — GET /api/admin/services (admin only),
  *  plus PATCH /api/services/:id/approve | /reject. */
@@ -62,7 +63,6 @@ class AdminServicesError extends Error {
   }
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PAGE_SIZE = 10;
 const DEBOUNCE_MS = 350;
 

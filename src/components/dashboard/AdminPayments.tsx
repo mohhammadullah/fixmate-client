@@ -5,6 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
+import { API_BASE } from "@/lib/api";
 
 /** Admin payment management — GET /api/admin/payments.
  *  Read-only by design: payment statuses are owned by the verified Stripe
@@ -69,7 +70,6 @@ class AdminPaymentsError extends Error {
   }
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PAGE_SIZE = 12;
 const DEBOUNCE_MS = 350;
 

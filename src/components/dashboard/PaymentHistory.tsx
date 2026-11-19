@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
+import { API_BASE } from "@/lib/api";
 
 /** Types — mirror the backend contract exactly.
  *  GET /api/payments/my (verifyToken + verifyCustomer) returns
@@ -54,7 +55,6 @@ class PaymentsError extends Error {
   }
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PAGE_SIZE = 10;
 
 function isRecord(value: unknown): value is Record<string, unknown> {

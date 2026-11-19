@@ -14,6 +14,7 @@ import {
   PAYMENT_SYNC_INTERVAL_MS,
   resolvePollDecision,
 } from "@/lib/payment-sync";
+import { API_BASE } from "@/lib/api";
 
 /** Payment success — the redirect alone never marks anything paid. Stripe redirected the browser here; the authoritative state lives in the FixMate backend, where the Stripe webhook reconciles the payment. This screen polls the booking until its paymentStatus flips to "paid", and stays honest until then. */
 
@@ -26,7 +27,6 @@ type SuccessState =
   | { phase: "confirmed"; paymentStatus: PaymentStatus; finalAmount?: number }
   | { phase: "awaiting" };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

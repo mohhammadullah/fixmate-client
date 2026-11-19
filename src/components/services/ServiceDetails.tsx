@@ -11,6 +11,7 @@ import {
   displayCategory,
   type AnyServiceCategory,
 } from "@/lib/service-categories";
+import { API_BASE } from "@/lib/api";
 
 /** Types mirror the public service-details DTO.
  *  GET /api/services/:id returns the safe public projection of an approved
@@ -79,7 +80,6 @@ class BookingError extends Error {
   }
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const OBJECT_ID_HEX = /^[0-9a-fA-F]{24}$/;
 
 

@@ -10,6 +10,7 @@ import {
   type AnyServiceCategory as ServiceCategory,
 } from "@/lib/service-categories";
 import ServiceImageFallback from "@/components/ui/ServiceImageFallback";
+import { API_BASE } from "@/lib/api";
 
 /* Types mirror the backend GET /api/services/my DTO:
  * { success, data, pagination }; dates serialize as strings. Internal
@@ -61,7 +62,6 @@ class ServicesError extends Error {
   }
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PAGE_SIZE = 9;
 
 type ApprovalStatusFilter = ServiceApprovalStatus | "all";

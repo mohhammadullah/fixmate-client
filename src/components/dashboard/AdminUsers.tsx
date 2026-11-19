@@ -5,6 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
+import { API_BASE } from "@/lib/api";
 
 /** Admin user management — safe user DTOs from GET /api/admin/users. */
 
@@ -51,7 +52,6 @@ class AdminUsersError extends Error {
   }
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const PAGE_SIZE = 10;
 const DEBOUNCE_MS = 350;
 

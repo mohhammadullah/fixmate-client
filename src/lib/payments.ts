@@ -1,4 +1,5 @@
 import { authClient } from "@/lib/auth-client";
+import { API_BASE } from "@/lib/api";
 
 /**
  * FixMate — shared Stripe Checkout initiation.
@@ -30,7 +31,6 @@ export class CheckoutSessionError extends Error {
   }
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

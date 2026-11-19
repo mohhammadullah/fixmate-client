@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { disconnectSocket } from "@/lib/socket";
 import { ROLE_LABELS, type DashboardRole } from "@/components/dashboard/DashboardSidebar";
 import ProfileAvatar from "@/components/ui/ProfileAvatar";
 import NotificationBell from "@/components/dashboard/NotificationBell";
@@ -113,6 +114,9 @@ export default function DashboardHeader({
         setIsSigningOut(false);
         return;
       }
+      // Drop the authenticated socket before the session atom settles so a
+      // different account cannot inherit listeners or room membership.
+      disconnectSocket();
       // Refresh server components and let the client session atom settle —
       // the dashboard layout reacts to the signed-out session and redirects.
       router.refresh();

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { API_BASE } from "@/lib/api";
-import { getSocket } from "@/lib/socket";
+import { attachBookingChatSession, getSocket } from "@/lib/socket";
 
 /**
  * Customer ↔ technician booking chat. REST for sending/history (rate-limited
@@ -114,45 +114,42 @@ export default function ChatPanel({
   }, [fetchPage, markRead, reloadToken]);
 
   // Join the booking room for live delivery + listen for new messages.
+  // Named handlers are removed exactly on cleanup; reconnect re-joins the
+  // active room. Effect dependencies keep closures current on booking switch.
   useEffect(() => {
     let cancelled = false;
-    let cleanup: (() => void) | undefined;
+    let detach: (() => void) | undefined;
 
     void (async () => {
       const socket = await getSocket();
       if (!socket || cancelled) return;
 
-      socket.on("connect", () => setConnected(true));
-      socket.on("disconnect", () => setConnected(false));
-      setConnected(socket.connected);
-
-      socket.emit("join:booking", { bookingId }, (ack: { success: boolean }) => {
-        if (!ack?.success && !cancelled) {
-          setLoadError("You are not a participant of this conversation.");
-        }
+      detach = attachBookingChatSession(socket, {
+        bookingId,
+        onConnected: () => setConnected(true),
+        onDisconnected: () => setConnected(false),
+        onJoinError: (message) => {
+          if (!cancelled) setLoadError(message);
+        },
+        onMessage: (payload) => {
+          const incoming = payload as ChatMessage;
+          setMessages((current) =>
+            current.some((message) => message.id === incoming.id)
+              ? current
+              : [...current, incoming]
+          );
+          // Mark read if the message came from the other participant.
+          if (incoming.senderId !== myId) {
+            void markRead();
+          }
+        },
       });
-
-      const handler = (incoming: ChatMessage) => {
-        setMessages((current) =>
-          current.some((message) => message.id === incoming.id)
-            ? current
-            : [...current, incoming]
-        );
-        // Mark read if the message came from the other participant.
-        if (incoming.senderId !== myId) {
-          void markRead();
-        }
-      };
-      socket.on("chat:message", handler);
-      cleanup = () => {
-        socket.off("chat:message", handler);
-        socket.emit("leave:booking", { bookingId });
-      };
+      setConnected(socket.connected);
     })();
 
     return () => {
       cancelled = true;
-      cleanup?.();
+      detach?.();
     };
   }, [bookingId, myId, markRead]);
 

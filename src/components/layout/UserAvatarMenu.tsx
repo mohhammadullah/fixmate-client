@@ -5,6 +5,7 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { disconnectSocket } from "@/lib/socket";
 import ProfileAvatar from "@/components/ui/ProfileAvatar";
 
 export interface SessionUserLike {
@@ -101,6 +102,9 @@ function useSignOut() {
     setSignOutError(null);
     try {
       await authClient.signOut();
+      // The global auth session is gone — tear down the shared authenticated
+      // socket so no notifications or chat state leak into a later account.
+      disconnectSocket();
       router.push("/");
       router.refresh();
     } catch {

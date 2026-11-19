@@ -211,7 +211,7 @@ export default function DashboardHeader({
           </button>
         </div>
 
-        {/* Sign-out error — accessible inline message (Sonner is not installed) */}
+        {/* Sign-out error — accessible inline message */}
         {signOutError && (
           <div
             role="alert"

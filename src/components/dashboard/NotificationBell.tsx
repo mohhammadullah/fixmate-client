@@ -53,6 +53,8 @@ export default function NotificationBell() {
     };
   }, [signedIn]);
 
+  const seenNotificationIdsRef = useRef<Set<string>>(new Set());
+
   // Live updates: prepend socket notifications, keep the badge in sync.
   useEffect(() => {
     if (!signedIn) return;
@@ -64,6 +66,8 @@ export default function NotificationBell() {
       if (!socket || cancelled) return;
 
       const handler = (incoming: AppNotification) => {
+        if (seenNotificationIdsRef.current.has(incoming.id)) return;
+        seenNotificationIdsRef.current.add(incoming.id);
         setItems((current) =>
           current.some((n) => n.id === incoming.id)
             ? current
@@ -86,6 +90,9 @@ export default function NotificationBell() {
     setLoadError(null);
     try {
       const page = await fetchNotifications({ limit: 8 });
+      for (const item of page.data) {
+        seenNotificationIdsRef.current.add(item.id);
+      }
       setItems(page.data);
       setUnreadCount(page.unreadCount);
     } catch (error) {

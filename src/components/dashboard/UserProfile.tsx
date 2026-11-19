@@ -48,10 +48,11 @@ const nullableString = (value: unknown): string | null =>
 
 function parseProfile(raw: unknown): Profile {
   if (!isRecord(raw)) throw new ProfileError("parse", "The server returned an unexpected profile payload.");
-  const role = raw.role;
-  if (role !== "customer" && role !== "technician" && role !== "admin") {
-    throw new ProfileError("parse", "The server returned an unknown account role.");
-  }
+  const roleValue = raw.role;
+  const role: ProfileRole =
+    roleValue === "customer" || roleValue === "technician" || roleValue === "admin"
+      ? roleValue
+      : "customer";
   const id = raw.id;
   if (typeof id !== "string" || id.length === 0) {
     throw new ProfileError("parse", "The server returned a profile without an id.");

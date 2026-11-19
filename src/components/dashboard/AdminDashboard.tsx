@@ -137,6 +137,41 @@ async function fetchStats(signal: AbortSignal): Promise<AdminStats> {
   };
 }
 
+function AdminHero() {
+  return (
+    <section className="relative overflow-hidden border-b border-border bg-navy-950 text-[#dbe4ef]">
+      <div
+        aria-hidden="true"
+        className="absolute inset-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(56,189,248,0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.055) 1px, transparent 1px)",
+          backgroundSize: "46px 46px",
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-accent-600/20 blur-3xl"
+      />
+      <div className="relative px-4 py-8 sm:px-8 sm:py-10">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-accent-400 sm:text-[11px]">
+          Dashboard · Admin
+        </p>
+        <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-[#f2f7fd] sm:text-3xl xl:text-4xl">
+          Platform{" "}
+          <span className="bg-gradient-to-r from-accent-400 via-accent-500 to-accent-600 bg-clip-text text-transparent">
+            Overview
+          </span>
+        </h1>
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#a8bdd4]">
+          A live snapshot of FixMate — accounts, services, bookings and the
+          review queue.
+        </p>
+      </div>
+    </section>
+  );
+}
+
 function Skeleton() {
   return (
     <div role="status" aria-label="Loading dashboard statistics…" className="space-y-6">
@@ -249,27 +284,49 @@ export default function AdminDashboard() {
     return () => { cancelled = true; controller.abort(); };
   }, [isPending, user, role, reloadToken]);
 
-  if (isPending) return <Skeleton />;
+  if (isPending) {
+    return (
+      <>
+        <section aria-label="Admin dashboard" className="px-4 py-6 sm:px-8 sm:py-8">
+          <Skeleton />
+        </section>
+      </>
+    );
+  }
   if (!user) return null;
   if (role !== "admin") {
     return <AccessDenied role={role === "customer" || role === "technician" ? role : null} />;
   }
-  if (state.phase === "loading") return <Skeleton />;
+  if (state.phase === "loading") {
+    return (
+      <>
+        <AdminHero />
+        <section aria-label="Admin dashboard" className="px-4 py-6 sm:px-8 sm:py-8">
+          <Skeleton />
+        </section>
+      </>
+    );
+  }
 
   if (state.phase === "error") {
     const unauthorized = state.error.kind === "unauthorized";
     return (
-      <div role="alert" className="rounded-2xl border border-error/40 bg-error-soft/60 px-5 py-10 text-center">
-        <h2 className="text-lg font-bold text-heading">{unauthorized ? "Session expired" : "Couldn't load statistics"}</h2>
-        <p className="mx-auto mt-1.5 max-w-md text-sm text-muted">{state.error.message}</p>
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-          {unauthorized ? (
-            <Link href="/sign-in" className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Sign in again</Link>
-          ) : (
-            <button type="button" onClick={() => { setState({ phase: "loading" }); setReloadToken((token) => token + 1); }} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Try again</button>
-          )}
-        </div>
-      </div>
+      <>
+        <AdminHero />
+        <section aria-label="Admin dashboard" className="px-4 py-6 sm:px-8 sm:py-8">
+          <div role="alert" className="rounded-2xl border border-error/40 bg-error-soft/60 px-5 py-10 text-center">
+            <h2 className="text-lg font-bold text-heading">{unauthorized ? "Session expired" : "Couldn't load statistics"}</h2>
+            <p className="mx-auto mt-1.5 max-w-md text-sm text-muted">{state.error.message}</p>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+              {unauthorized ? (
+                <Link href="/sign-in" className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Sign in again</Link>
+              ) : (
+                <button type="button" onClick={() => { setState({ phase: "loading" }); setReloadToken((token) => token + 1); }} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm cursor-pointer transition-all duration-200 hover:bg-primary-hover hover:shadow-md active:bg-primary-hover active:scale-[0.98]">Try again</button>
+              )}
+            </div>
+          </div>
+        </section>
+      </>
     );
   }
 
@@ -278,7 +335,10 @@ export default function AdminDashboard() {
     stats.totalUsers === 0 && stats.totalServices === 0 && stats.totalBookings === 0;
 
   return (
-    <div className="space-y-8">
+    <>
+      <AdminHero />
+      <section aria-label="Admin dashboard" className="px-4 py-6 sm:px-8 sm:py-8">
+        <div className="space-y-8">
       {allEmpty && (
         <div role="status" className="rounded-2xl border border-dashed border-border-strong bg-surface-muted/30 px-5 py-8 text-center text-sm text-muted">
           No platform data yet — statistics will populate as users, services and bookings are created.
@@ -385,6 +445,8 @@ export default function AdminDashboard() {
           </Link>
         </div>
       </section>
-    </div>
+        </div>
+      </section>
+    </>
   );
 }

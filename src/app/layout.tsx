@@ -15,13 +15,46 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+let siteUrl: URL | undefined;
+if (rawSiteUrl) {
+  try {
+    const parsed = new URL(rawSiteUrl);
+    if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+      siteUrl = parsed;
+    }
+  } catch {
+    siteUrl = undefined;
+  }
+}
+
 export const metadata: Metadata = {
+  ...(siteUrl ? { metadataBase: siteUrl } : {}),
   title: {
     default: "FixMate — Expert Repairs. Reliable Solutions. Every Time.",
     template: "%s | FixMate",
   },
   description:
     "Find verified repair technicians for smartphones, laptops and home appliances. Approved services, transparent hourly rates and genuine customer reviews — book trusted repairs with FixMate.",
+  applicationName: "FixMate",
+  openGraph: {
+    type: "website",
+    siteName: "FixMate",
+    title: "FixMate — Expert Repairs. Reliable Solutions. Every Time.",
+    description:
+      "Find verified repair technicians for smartphones, laptops and home appliances. Approved services, transparent hourly rates and genuine customer reviews — book trusted repairs with FixMate.",
+    ...(siteUrl ? { url: siteUrl } : {}),
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FixMate — Expert Repairs. Reliable Solutions. Every Time.",
+    description:
+      "Find verified repair technicians for smartphones, laptops and home appliances. Book trusted repairs with FixMate.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

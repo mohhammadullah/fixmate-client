@@ -31,62 +31,42 @@ export default function InvoiceView({ bookingId }: { bookingId: string }) {
     | { phase: "error"; message: string }
     | { phase: "success"; data: InvoiceData }
   >({ phase: "loading" });
-
-  async function load() {
-    setState({ phase: "loading" });
-    try {
-      const tokenResponse = await authClient.$fetch<{ token: string }>("/token", { method: "GET" });
-      const token = (tokenResponse.data as { token?: unknown } | null)?.token;
-      if (typeof token !== "string" || !token) {
-        throw new Error("Your session has expired. Sign in again.");
-      }
-      const response = await fetch(
-        `${API_BASE}/api/bookings/${encodeURIComponent(bookingId)}/invoice`,
-        { headers: { authorization: `Bearer ${token}`, accept: "application/json" } }
-      );
-      const body = (await response.json().catch(() => null)) as {
-        success?: boolean;
-        data?: InvoiceData;
-        message?: string;
-      } | null;
-      if (!response.ok || !body?.success || !body.data) {
-        throw new Error(body?.message ?? `Could not load the invoice (${response.status}).`);
-      }
-      setState({ phase: "success", data: body.data });
-    } catch (error) {
-      setState({
-        phase: "error",
-        message: error instanceof Error ? error.message : "Could not load the invoice.",
-      });
-    }
-  }
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
+    let active = true;
 
     const run = async () => {
+      setState({ phase: "loading" });
       try {
         const tokenResponse = await authClient.$fetch<{ token: string }>("/token", { method: "GET" });
+        if (!active || controller.signal.aborted) return;
         const token = (tokenResponse.data as { token?: unknown } | null)?.token;
         if (typeof token !== "string" || !token) {
           throw new Error("Your session has expired. Sign in again.");
         }
+
         const response = await fetch(
           `${API_BASE}/api/bookings/${encodeURIComponent(bookingId)}/invoice`,
-          { headers: { authorization: `Bearer ${token}`, accept: "application/json" } }
+          {
+            headers: { authorization: `Bearer ${token}`, accept: "application/json" },
+            signal: controller.signal,
+          }
         );
         const body = (await response.json().catch(() => null)) as {
           success?: boolean;
           data?: InvoiceData;
           message?: string;
         } | null;
-        if (cancelled) return;
+        if (!active || controller.signal.aborted) return;
         if (!response.ok || !body?.success || !body.data) {
           throw new Error(body?.message ?? `Could not load the invoice (${response.status}).`);
         }
         setState({ phase: "success", data: body.data });
       } catch (error) {
-        if (cancelled) return;
+        if (!active || controller.signal.aborted) return;
+        if (error instanceof DOMException && error.name === "AbortError") return;
         setState({
           phase: "error",
           message: error instanceof Error ? error.message : "Could not load the invoice.",
@@ -97,9 +77,14 @@ export default function InvoiceView({ bookingId }: { bookingId: string }) {
     void run();
 
     return () => {
-      cancelled = true;
+      active = false;
+      controller.abort();
     };
-  }, [bookingId]);
+  }, [bookingId, reloadToken]);
+
+  function load() {
+    setReloadToken((token) => token + 1);
+  }
 
   if (state.phase === "loading") {
     return (

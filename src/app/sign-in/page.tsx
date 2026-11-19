@@ -6,6 +6,16 @@ export const metadata: Metadata = {
   title: "Sign In",
   description:
     "Sign in to your FixMate account to book repairs, track job progress and connect with verified technicians for devices and home appliances.",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
+  },
 };
 
 export default function SignInPage() {

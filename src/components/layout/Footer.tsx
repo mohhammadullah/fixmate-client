@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { SERVICE_CATEGORIES, categoryHref } from "@/lib/service-categories";
+import CurrentYear from "./CurrentYear";
 
 const QUICK_LINKS = [
   { label: "Home", href: "/" },
@@ -60,10 +61,7 @@ const CONTACT: ContactItem[] = [
 const linkClass =
   "inline-flex w-fit cursor-pointer rounded-sm text-sm text-muted transition-colors duration-200 hover:text-heading hover:underline hover:underline-offset-4 active:text-accent-strong dark:active:text-accent";
 
-export default async function Footer() {
-  "use cache";
-  const currentYear = new Date().getFullYear();
-
+export default function Footer() {
   return (
     <footer className="border-t border-border bg-surface">
       <div className="container-page py-12 lg:py-16">
@@ -176,7 +174,7 @@ export default async function Footer() {
         {/* Bottom bar */}
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-6 sm:flex-row">
           <p className="text-sm text-muted">
-            © {currentYear} FixMate. All rights reserved.
+            © <CurrentYear /> FixMate. All rights reserved.
           </p>
           <nav aria-label="Legal">
             <ul className="flex items-center gap-6">

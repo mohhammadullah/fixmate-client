@@ -17,6 +17,7 @@ import {
   Legend,
 } from "recharts";
 import { fetchAdminAnalytics, type AdminAnalyticsData } from "@/lib/admin-api";
+import { minorUnitExponent } from "@/lib/currency";
 
 const STATUS_COLORS: Record<string, string> = {
   requested: "#38bdf8",
@@ -30,16 +31,21 @@ const STATUS_COLORS: Record<string, string> = {
 const NAVY = "#0b1b30";
 const ACCENT = "#0ea5e9";
 
+const toMajor = (minor: number, currency: string): number =>
+  minor / 10 ** minorUnitExponent(currency);
+
 const formatMoney = (minor: number, currency: string) => {
-  const major = minor / 100;
+  const exponent = minorUnitExponent(currency);
+  const major = toMajor(minor, currency);
   try {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: currency.toUpperCase(),
-      maximumFractionDigits: major % 1 === 0 ? 0 : 2,
+      minimumFractionDigits: exponent,
+      maximumFractionDigits: exponent,
     }).format(major);
   } catch {
-    return `${major.toFixed(2)} ${currency.toUpperCase()}`;
+    return `${major.toFixed(exponent)} ${currency.toUpperCase()}`;
   }
 };
 
@@ -189,7 +195,7 @@ export default function AdminAnalytics() {
 
   const revenueTrend = data.trends.revenuePerDay
     .filter((row) => row.currency === selectedCurrency)
-    .map((row) => ({ date: row.date.slice(5), net: row.netMinor / 100 }));
+    .map((row) => ({ date: row.date.slice(5), net: toMajor(row.netMinor, row.currency) }));
 
   const bookingTrend = data.trends.bookingsPerDay.map((row) => ({ date: row.date.slice(5), count: row.count }));
 
@@ -261,7 +267,7 @@ export default function AdminAnalytics() {
         <KpiCard label="Approved services" value={data.services.approved} hint={`${data.services.pending} pending approval`} />
         <KpiCard label="Total bookings" value={data.bookings.total} hint={`${data.bookings.completed} completed`} />
         <KpiCard label="Completed" value={data.bookings.completed} hint={`${data.bookings.cancelled} cancelled`} />
-        <KpiCard label="Coupon redemptions" value={data.coupons.redemptions} hint={data.coupons.discountMinorByCurrency.map((d) => `${(d.discountMinor / 100).toFixed(0)} ${d.currency.toUpperCase()} off`).join(" · ") || "no discounts yet"} />
+        <KpiCard label="Coupon redemptions" value={data.coupons.redemptions} hint={data.coupons.discountMinorByCurrency.map((d) => `${formatMoney(d.discountMinor, d.currency)} off`).join(" · ") || "no discounts yet"} />
         <KpiCard label={`Collected (${selectedCurrency.toUpperCase()})`} value={currencyBucket ? formatMoney(currencyBucket.succeededMinor, selectedCurrency) : "—"} hint={`${currencyBucket?.succeededCount ?? 0} payments`} />
         <KpiCard label={`Net revenue (${selectedCurrency.toUpperCase()})`} value={currencyBucket ? formatMoney(currencyBucket.netMinor, selectedCurrency) : "—"} hint={`${refundsBucket ? formatMoney(refundsBucket.succeededMinor, selectedCurrency) : "0"} refunded`} />
       </div>

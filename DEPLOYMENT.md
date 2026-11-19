@@ -11,6 +11,7 @@ local `.env.local` that is gitignored.
 | Variable              | Scope        | Example value                                  | Notes                                                                 |
 | --------------------- | ------------ | ---------------------------------------------- | --------------------------------------------------------------------- |
 | `NEXT_PUBLIC_API_URL` | public (yes) | `http://localhost:5000` (dev) / `https://<backend-domain>` (prod) | Base URL of the backend API. **Public & non-secret** — embedded in the browser bundle. Has no leading slash and must not point to any private/internal host that you do not want revealed. Required and **HTTPS-only in production builds**; a missing, malformed or HTTP value fails `next build` with a clear error. Only `next dev` falls back to `http://localhost:5000`. |
+| `NEXT_PUBLIC_SITE_URL` | public (optional) | `https://<client-domain>` | Public frontend origin used for canonical/Open Graph metadata and sitemap/robots generation. Leave unset to avoid emitting fake canonical URLs when the deployed URL is not known. |
 
 No server-only variable is read by this project. Anything prefixed with
 `NEXT_PUBLIC_` is **visible to the browser**; never put secrets behind that
@@ -77,6 +78,19 @@ file). Ensure the host serves the Next.js routes at their original paths
 `node scripts/api-config-test.mjs` checks the production fail-fast rules for
 `NEXT_PUBLIC_API_URL` (missing, malformed, HTTP, HTTPS, dev fallback) without
 network access or a database. It must pass before a release build.
+
+## Security headers and limitations
+
+- The client sets basic security headers in `next.config.ts` (e.g.
+  `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`,
+  `Permissions-Policy`) and disables `X-Powered-By`.
+- A strict Content Security Policy (CSP) is **not** enforced in this batch to
+  avoid breaking Better Auth flows, Stripe Checkout redirects, ImgBB-hosted
+  images, Socket.IO, and existing external resources without nonce/hash
+  architecture changes. If a CSP is added later, validate it against all of
+  these integrations in production builds.
+- `Strict-Transport-Security` should be enabled only where HTTPS is guaranteed
+  by the hosting/proxy layer.
 
 ## What NOT to do
 

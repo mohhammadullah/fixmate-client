@@ -67,11 +67,12 @@ class FakeSocket {
   }
 }
 
-const handlers = (bookingId, received) => ({
+const handlers = (bookingId, received, reads = []) => ({
   bookingId,
   onConnected: () => {},
   onDisconnected: () => {},
   onMessage: (payload) => received.push(payload),
+  onRead: (payload) => reads.push(payload),
 });
 
 console.log("Socket lifecycle test\n");
@@ -83,12 +84,18 @@ console.log("[listener cleanup]");
   const seen = [];
   const detach = attachBookingChatSession(socket, handlers("booking-a", seen));
   check(
-    socket.count("connect") === 1 && socket.count("disconnect") === 1 && socket.count("chat:message") === 1,
+    socket.count("connect") === 1 &&
+      socket.count("disconnect") === 1 &&
+      socket.count("chat:message") === 1 &&
+      socket.count("chat:read") === 1,
     "attach registers exactly one of each listener"
   );
   detach();
   check(
-    socket.count("connect") === 0 && socket.count("disconnect") === 0 && socket.count("chat:message") === 0,
+    socket.count("connect") === 0 &&
+      socket.count("disconnect") === 0 &&
+      socket.count("chat:message") === 0 &&
+      socket.count("chat:read") === 0,
     "detach removes the exact registered listeners"
   );
   check(socket.leaves.length === 1 && socket.leaves[0].bookingId === "booking-a", "detach leaves the booking room");
@@ -103,7 +110,10 @@ console.log("\n[remount / Strict Mode]");
   attachBookingChatSession(socket, handlers("booking-a", []))();
   attachBookingChatSession(socket, handlers("booking-a", []));
   check(
-    socket.count("connect") === 1 && socket.count("disconnect") === 1 && socket.count("chat:message") === 1,
+    socket.count("connect") === 1 &&
+      socket.count("disconnect") === 1 &&
+      socket.count("chat:message") === 1 &&
+      socket.count("chat:read") === 1,
     "remount does not accumulate duplicate listeners"
   );
   check(socket.joins.length === 2, "each mount performs one fresh room join");
@@ -114,8 +124,10 @@ console.log("\n[reconnect and booking switch]");
   const socket = new FakeSocket();
   socket.connected = true;
   const oldMessages = [];
+  const oldReads = [];
   const newMessages = [];
-  const detachOld = attachBookingChatSession(socket, handlers("booking-a", oldMessages));
+  const newReads = [];
+  const detachOld = attachBookingChatSession(socket, handlers("booking-a", oldMessages, oldReads));
   check(socket.joins.length === 1, "initial join emitted once for an already-connected socket");
 
   socket.fire("disconnect");
@@ -124,15 +136,21 @@ console.log("\n[reconnect and booking switch]");
   check(socket.joins.length === 2, "reconnect rejoins the active booking room");
 
   detachOld();
-  attachBookingChatSession(socket, handlers("booking-b", newMessages));
+  attachBookingChatSession(socket, handlers("booking-b", newMessages, newReads));
   check(
     socket.joins.length === 3 && socket.joins[2].bookingId === "booking-b",
     "booking switch joins the new room"
   );
   socket.fire("chat:message", { id: "m1" });
+  socket.fire("chat:read", { bookingId: "booking-a", readBy: "other-user", readAt: "2026-01-01T00:00:00.000Z" });
+  socket.fire("chat:read", { bookingId: "booking-b", readBy: "other-user", readAt: "2026-01-01T00:00:01.000Z" });
   check(
     oldMessages.length === 0 && newMessages.length === 1,
     "old booking listener no longer receives messages"
+  );
+  check(
+    oldReads.length === 0 && newReads.length === 1 && newReads[0].bookingId === "booking-b",
+    "chat:read updates only the active authorized booking session"
   );
 }
 

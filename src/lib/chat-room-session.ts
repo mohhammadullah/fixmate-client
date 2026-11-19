@@ -10,11 +10,18 @@ import type { Socket } from "socket.io-client";
  * reconnect. Exported for focused lifecycle tests with a fake socket.
  */
 
+export interface BookingChatReadPayload {
+  bookingId?: string;
+  readBy?: string;
+  readAt?: string;
+}
+
 export interface BookingChatSessionHandlers {
   bookingId: string;
   onConnected: () => void;
   onDisconnected: () => void;
   onMessage: (payload: unknown) => void;
+  onRead?: (payload: BookingChatReadPayload) => void;
   onJoinError?: (message: string) => void;
 }
 
@@ -22,7 +29,7 @@ export function attachBookingChatSession(
   socket: Socket,
   handlers: BookingChatSessionHandlers
 ): () => void {
-  const { bookingId, onConnected, onDisconnected, onMessage, onJoinError } = handlers;
+  const { bookingId, onConnected, onDisconnected, onMessage, onRead, onJoinError } = handlers;
   let active = true;
 
   const joinBooking = () => {
@@ -51,9 +58,18 @@ export function attachBookingChatSession(
     if (active) onMessage(payload);
   };
 
+  const handleRead = (payload: unknown) => {
+    if (!active) return;
+    const data = payload as BookingChatReadPayload | null | undefined;
+    // Ignore malformed or unrelated booking payloads.
+    if (data?.bookingId && data.bookingId !== bookingId) return;
+    onRead?.(data ?? {});
+  };
+
   socket.on("connect", handleConnect);
   socket.on("disconnect", handleDisconnect);
   socket.on("chat:message", handleMessage);
+  socket.on("chat:read", handleRead);
 
   // An already-connected socket will not emit "connect" again, so join once
   // here. A connecting socket joins from handleConnect instead — no duplicates.
@@ -65,6 +81,7 @@ export function attachBookingChatSession(
     socket.off("connect", handleConnect);
     socket.off("disconnect", handleDisconnect);
     socket.off("chat:message", handleMessage);
+    socket.off("chat:read", handleRead);
     if (socket.connected) socket.emit("leave:booking", { bookingId });
   };
 }

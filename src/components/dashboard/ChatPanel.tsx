@@ -113,7 +113,7 @@ export default function ChatPanel({
     };
   }, [fetchPage, markRead, reloadToken]);
 
-  // Join the booking room for live delivery + listen for new messages.
+  // Join the booking room for live delivery + listen for new messages/read receipts.
   // Named handlers are removed exactly on cleanup; reconnect re-joins the
   // active room. Effect dependencies keep closures current on booking switch.
   useEffect(() => {
@@ -142,6 +142,18 @@ export default function ChatPanel({
           if (incoming.senderId !== myId) {
             void markRead();
           }
+        },
+        onRead: (payload) => {
+          const readBy = payload.readBy;
+          if (!readBy || (myId && readBy === myId)) return;
+          const readAt = payload.readAt ?? new Date().toISOString();
+          setMessages((current) =>
+            current.map((message) =>
+              myId && message.senderId === myId && !message.readAt
+                ? { ...message, readAt }
+                : message
+            )
+          );
         },
       });
       setConnected(socket.connected);
@@ -298,7 +310,7 @@ export default function ChatPanel({
                         <time dateTime={message.createdAt}>
                           {new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" }).format(new Date(message.createdAt))}
                         </time>
-                        {!mine && message.readAt ? " · read" : ""}
+                        {mine && message.readAt ? " · read" : ""}
                       </p>
                     </div>
                   </li>

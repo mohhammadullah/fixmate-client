@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
-import ProfileAvatar from "@/components/ui/ProfileAvatar";
+import ProfilePhotoManager from "@/components/dashboard/ProfilePhotoManager";
 import {
   ROLE_LABELS,
   type DashboardRole,
@@ -22,6 +22,7 @@ interface Profile {
   phone: string | null;
   area: string | null;
   bio: string | null;
+  image: string | null;
   createdAt: string | null;
   updatedAt: string | null;
   technicianApplicationStatus: "pending" | "approved" | "rejected" | null;
@@ -45,6 +46,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 const nullableString = (value: unknown): string | null =>
   typeof value === "string" && value.length > 0 ? value : null;
+const nullableHttpUrl = (value: unknown): string | null =>
+  typeof value === "string" && /^https?:\/\//i.test(value.trim()) ? value.trim() : null;
 
 function parseProfile(raw: unknown): Profile {
   if (!isRecord(raw)) throw new ProfileError("parse", "The server returned an unexpected profile payload.");
@@ -66,6 +69,7 @@ function parseProfile(raw: unknown): Profile {
     phone: nullableString(raw.phone),
     area: nullableString(raw.area),
     bio: nullableString(raw.bio),
+    image: nullableHttpUrl(raw.image),
     createdAt: nullableString(raw.createdAt),
     updatedAt: nullableString(raw.updatedAt),
     technicianApplicationStatus:
@@ -233,10 +237,9 @@ const APPLICATION_STATUS_STYLES: Record<"pending" | "approved" | "rejected", str
 };
 
 export default function UserProfile() {
-  // The profile photo lives on the session (Better Auth user.image) — the
-  // /api/users/me DTO deliberately doesn't project it — so read it here.
-  const { data: session } = authClient.useSession();
-  const sessionImage = session?.user?.image ?? null;
+  // Refresh the shared Better Auth session after a photo change so the
+  // navbar, dashboard header and this card all see the new image instantly.
+  const { refetch: refetchSession } = authClient.useSession();
 
   const [state, setState] = useState<
     | { phase: "loading" }
@@ -284,6 +287,22 @@ export default function UserProfile() {
     const timeout = window.setTimeout(() => setNotice(null), 6000);
     return () => window.clearTimeout(timeout);
   }, [notice]);
+
+  // After a photo upload/removal: patch the local DTO image and refresh the
+  // global session so every avatar in the app updates without a logout.
+  async function handleImageChanged(image: string | null) {
+    setState((current) =>
+      current.phase === "success"
+        ? { ...current, profile: { ...current.profile, image } }
+        : current
+    );
+    try {
+      await refetchSession();
+    } catch {
+      // The upload itself already succeeded — a stale session refresh is not
+      // worth surfacing as a photo error.
+    }
+  }
 
   function update(key: keyof EditValues, value: string) {
     setValues((current) => ({ ...current, [key]: value }));
@@ -373,11 +392,12 @@ export default function UserProfile() {
             <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-accent-500/20 blur-2xl" />
           </div>
           <div className="relative -mt-14 px-5 pb-6 sm:px-6">
-            <ProfileAvatar
-              image={sessionImage}
+            <ProfilePhotoManager
+              image={profile.image}
               name={profile.name}
               email={profile.email}
-              className="h-28 w-28 border-4 border-surface text-2xl shadow-lg sm:h-32 sm:w-32 sm:text-3xl"
+              avatarClassName="h-28 w-28 text-2xl sm:h-32 sm:w-32 sm:text-3xl"
+              onImageChanged={handleImageChanged}
             />
             <h2 id="profile-identity-heading" className="mt-3 text-lg font-extrabold tracking-tight text-heading">
               {profile.name ?? "Unnamed account"}

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
+import ProfileAvatar from "@/components/ui/ProfileAvatar";
 import { API_BASE } from "@/lib/api";
 import { formatMinorUnits } from "@/lib/currency";
 
@@ -137,7 +138,12 @@ async function fetchStats(signal: AbortSignal): Promise<AdminStats> {
   };
 }
 
-function AdminHero() {
+function AdminHero({
+  user,
+}: {
+  user: { name?: string | null; email?: string | null; image?: string | null } | null;
+}) {
+  const displayName = user?.name?.trim() || user?.email || null;
   return (
     <section className="relative overflow-hidden border-b border-border bg-navy-950 text-[#dbe4ef]">
       <div
@@ -153,20 +159,30 @@ function AdminHero() {
         aria-hidden="true"
         className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-accent-600/20 blur-3xl"
       />
-      <div className="relative px-4 py-8 sm:px-8 sm:py-10">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-accent-400 sm:text-[11px]">
-          Dashboard · Admin
-        </p>
-        <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-[#f2f7fd] sm:text-3xl xl:text-4xl">
-          Platform{" "}
-          <span className="bg-gradient-to-r from-accent-400 via-accent-500 to-accent-600 bg-clip-text text-transparent">
-            Overview
-          </span>
-        </h1>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#a8bdd4]">
-          A live snapshot of FixMate — accounts, services, bookings and the
-          review queue.
-        </p>
+      <div className="relative flex items-center gap-4 px-4 py-8 sm:gap-6 sm:px-8 sm:py-10">
+        {displayName && (
+          <ProfileAvatar
+            image={typeof user?.image === "string" ? user.image : null}
+            name={user?.name}
+            email={user?.email}
+            className="h-16 w-16 shrink-0 text-lg ring-2 ring-accent-400/40 sm:h-20 sm:w-20 sm:text-xl"
+          />
+        )}
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-accent-400 sm:text-[11px]">
+            Dashboard · Admin
+          </p>
+          <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-[#f2f7fd] sm:text-3xl xl:text-4xl">
+            Platform{" "}
+            <span className="bg-gradient-to-r from-accent-400 via-accent-500 to-accent-600 bg-clip-text text-transparent">
+              Overview
+            </span>
+          </h1>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#a8bdd4]">
+            A live snapshot of FixMate — accounts, services, bookings and the
+            review queue.
+          </p>
+        </div>
       </div>
     </section>
   );
@@ -300,7 +316,7 @@ export default function AdminDashboard() {
   if (state.phase === "loading") {
     return (
       <>
-        <AdminHero />
+        <AdminHero user={user} />
         <section aria-label="Admin dashboard" className="px-4 py-6 sm:px-8 sm:py-8">
           <Skeleton />
         </section>
@@ -312,7 +328,7 @@ export default function AdminDashboard() {
     const unauthorized = state.error.kind === "unauthorized";
     return (
       <>
-        <AdminHero />
+        <AdminHero user={user} />
         <section aria-label="Admin dashboard" className="px-4 py-6 sm:px-8 sm:py-8">
           <div role="alert" className="rounded-2xl border border-error/40 bg-error-soft/60 px-5 py-10 text-center">
             <h2 className="text-lg font-bold text-heading">{unauthorized ? "Session expired" : "Couldn't load statistics"}</h2>
@@ -336,7 +352,7 @@ export default function AdminDashboard() {
 
   return (
     <>
-      <AdminHero />
+      <AdminHero user={user} />
       <section aria-label="Admin dashboard" className="px-4 py-6 sm:px-8 sm:py-8">
         <div className="space-y-8">
       {allEmpty && (

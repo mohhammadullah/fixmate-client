@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
+import ProfileAvatar from "@/components/ui/ProfileAvatar";
 import {
   navItemsForRole,
   roleFromUser,
@@ -92,26 +93,34 @@ export default function DashboardPage() {
           className="pointer-events-none absolute -bottom-28 left-1/4 h-72 w-72 rounded-full bg-accent-400/10 blur-3xl"
         />
 
-        <div className="relative px-4 py-10 sm:px-8 sm:py-14">
-          <div className="flex items-center gap-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-accent-400 sm:text-[11px]">
-              FixMate Dashboard
-            </p>
-            {role && (
-              <span className="inline-flex items-center rounded-full border border-accent-400/30 bg-accent-400/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-accent-400">
-                {ROLE_LABELS[role]}
+        <div className="relative flex items-center gap-4 px-4 py-10 sm:gap-6 sm:px-8 sm:py-14">
+          <ProfileAvatar
+            image={typeof user.image === "string" ? user.image : null}
+            name={user.name}
+            email={user.email}
+            className="h-16 w-16 shrink-0 text-lg ring-2 ring-accent-400/40 sm:h-20 sm:w-20 sm:text-xl"
+          />
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-accent-400 sm:text-[11px]">
+                FixMate Dashboard
+              </p>
+              {role && (
+                <span className="inline-flex items-center rounded-full border border-accent-400/30 bg-accent-400/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-accent-400">
+                  {ROLE_LABELS[role]}
+                </span>
+              )}
+            </div>
+            <h1 className="mt-3 max-w-3xl text-3xl font-extrabold leading-[1.15] tracking-tight text-[#f2f7fd] sm:text-4xl xl:text-5xl">
+              Welcome back,{" "}
+              <span className="bg-gradient-to-r from-accent-400 via-accent-500 to-accent-600 bg-clip-text text-transparent">
+                {displayName}
               </span>
-            )}
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#a8bdd4] sm:text-base">
+              {description}
+            </p>
           </div>
-          <h1 className="mt-3 max-w-3xl text-3xl font-extrabold leading-[1.15] tracking-tight text-[#f2f7fd] sm:text-4xl xl:text-5xl">
-            Welcome back,{" "}
-            <span className="bg-gradient-to-r from-accent-400 via-accent-500 to-accent-600 bg-clip-text text-transparent">
-              {displayName}
-            </span>
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#a8bdd4] sm:text-base">
-            {description}
-          </p>
         </div>
       </section>
 

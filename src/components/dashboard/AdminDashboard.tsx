@@ -5,6 +5,7 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { roleFromUser } from "@/components/dashboard/DashboardSidebar";
 import { API_BASE } from "@/lib/api";
+import { formatMinorUnits } from "@/lib/currency";
 
 /** Admin dashboard statistics — GET /api/admin/dashboard/stats. */
 
@@ -21,9 +22,15 @@ interface AdminStats {
   completedBookings: number;
   cancelledBookings: number;
   pendingTechnicianApplications: number;
-  totalSuccessfulPaymentAmount: number;
-  paymentsAvailable: boolean;
-  paymentNote: string;
+  settledPaymentRevenue: SettledPaymentRevenue[];
+}
+
+interface SettledPaymentRevenue {
+  currency: string;
+  succeededPayments: number;
+  grossMinor: number;
+  refundedMinor: number;
+  netMinor: number;
 }
 
 type ErrorKind = "unauthorized" | "forbidden" | "network" | "server" | "parse";
@@ -40,6 +47,26 @@ class AdminStatsError extends Error {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseRevenue(raw: unknown): SettledPaymentRevenue[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((entry): SettledPaymentRevenue[] => {
+    if (!isRecord(entry)) return [];
+    const currency = entry.currency;
+    const fields = ["succeededPayments", "grossMinor", "refundedMinor", "netMinor"] as const;
+    if (typeof currency !== "string" || !/^[a-z]{3}$/i.test(currency)) return [];
+    if (!fields.every((key) => typeof entry[key] === "number" && Number.isFinite(entry[key]))) {
+      return [];
+    }
+    return [{
+      currency: currency.toLowerCase(),
+      succeededPayments: entry.succeededPayments as number,
+      grossMinor: entry.grossMinor as number,
+      refundedMinor: entry.refundedMinor as number,
+      netMinor: entry.netMinor as number,
+    }];
+  });
 }
 
 async function fetchAccessToken(): Promise<string> {
@@ -106,9 +133,7 @@ async function fetchStats(signal: AbortSignal): Promise<AdminStats> {
     completedBookings: numberField("completedBookings"),
     cancelledBookings: numberField("cancelledBookings"),
     pendingTechnicianApplications: numberField("pendingTechnicianApplications"),
-    totalSuccessfulPaymentAmount: numberField("totalSuccessfulPaymentAmount"),
-    paymentsAvailable: raw.paymentsAvailable === true,
-    paymentNote: typeof raw.paymentNote === "string" ? raw.paymentNote : "",
+    settledPaymentRevenue: parseRevenue(raw.settledPaymentRevenue),
   };
 }
 
@@ -291,6 +316,39 @@ export default function AdminDashboard() {
           <StatCard label="Completed" value={stats.completedBookings} />
           <StatCard label="Cancelled" value={stats.cancelledBookings} />
         </div>
+      </section>
+
+      <section aria-labelledby="revenue-heading">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 id="revenue-heading" className="text-lg font-extrabold tracking-tight text-heading">Settled revenue</h2>
+            <p className="mt-1 text-xs text-muted">
+              Net of completed Stripe refunds, grouped by currency. Pending and rejected requests are excluded.
+            </p>
+          </div>
+        </div>
+        {stats.settledPaymentRevenue.length === 0 ? (
+          <div role="status" className="mt-4 rounded-2xl border border-dashed border-border-strong bg-surface-muted/30 px-5 py-8 text-center text-sm text-muted">
+            No settled payments yet — revenue will appear here after Stripe webhooks confirm payments.
+          </div>
+        ) : (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {stats.settledPaymentRevenue.map((revenue) => (
+              <div key={revenue.currency} className="rounded-2xl border border-accent-500/40 bg-accent-50/60 p-5 shadow-xs dark:border-accent-400/30 dark:bg-accent-400/10">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
+                  Net revenue · {revenue.currency.toUpperCase()}
+                </p>
+                <p className="mt-2 text-2xl font-extrabold tabular-nums tracking-tight text-accent-strong dark:text-accent">
+                  {formatMinorUnits(revenue.netMinor, revenue.currency)}
+                </p>
+                <p className="mt-1 text-[11px] leading-snug text-muted">
+                  {revenue.succeededPayments} {revenue.succeededPayments === 1 ? "settled payment" : "settled payments"}
+                  {" · "}{formatMinorUnits(revenue.refundedMinor, revenue.currency)} refunded
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section aria-labelledby="quick-links-heading">

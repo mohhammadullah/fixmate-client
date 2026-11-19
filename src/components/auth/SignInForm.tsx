@@ -2,8 +2,9 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { safeAuthRedirect, withAuthCallback } from "@/lib/auth-redirect";
 
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -242,6 +243,8 @@ const PANEL_STEPS = [
 
 export default function SignInForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = safeAuthRedirect(searchParams.get("callbackURL"));
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -290,9 +293,9 @@ export default function SignInForm() {
         return;
       }
 
-      // Success — Better Auth has set the session cookie. Send the user to
-      // the homepage (the only relevant post-auth destination that exists today).
-      router.push("/");
+      // Success — Better Auth has set the session cookie. Honour a validated
+      // local destination, otherwise use the existing homepage default.
+      router.push(callbackUrl);
       router.refresh();
     } catch {
       setFormError(
@@ -593,7 +596,7 @@ export default function SignInForm() {
               <p className="mt-4 text-center text-sm text-muted">
                 Don&apos;t have an account?{" "}
                 <Link
-                  href="/sign-up"
+                  href={withAuthCallback("/sign-up", callbackUrl)}
                   className="font-semibold text-accent-strong underline underline-offset-4 transition-colors duration-200 hover:text-accent dark:text-accent dark:hover:text-accent-strong cursor-pointer"
                 >
                   Create your FixMate account

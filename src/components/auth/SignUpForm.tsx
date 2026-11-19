@@ -2,7 +2,8 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { safeAuthRedirect, withAuthCallback } from "@/lib/auth-redirect";
 import { authClient } from "@/lib/auth-client";
 
 
@@ -303,6 +304,8 @@ const PANEL_STEPS = [
 
 export default function SignUpForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = safeAuthRedirect(searchParams.get("callbackURL"));
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -435,9 +438,9 @@ export default function SignUpForm() {
         return;
       }
 
-      // Success — Better Auth has set the session cookie. Send the user to
-      // the homepage (the only relevant post-auth destination that exists today).
-      router.push("/");
+      // Success — Better Auth has set the session cookie. Honour a validated
+      // local destination, otherwise use the existing homepage default.
+      router.push(callbackUrl);
       router.refresh();
     } catch {
       setFormError(
@@ -919,7 +922,7 @@ export default function SignUpForm() {
               <p className="mt-4 text-center text-sm text-muted">
                 Already have a FixMate account?{" "}
                 <Link
-                  href="/sign-in"
+                  href={withAuthCallback("/sign-in", callbackUrl)}
                   className="font-semibold text-accent-strong underline underline-offset-4 transition-colors duration-200 hover:text-accent dark:text-accent dark:hover:text-accent-strong cursor-pointer"
                 >
                   Sign in instead

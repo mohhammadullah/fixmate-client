@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import SignUpForm from "@/components/auth/SignUpForm";
 
 export const metadata: Metadata = {
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function SignUpPage() {
-  return <SignUpForm />;
+  return (
+    <Suspense fallback={<div className="min-h-[60vh]" aria-hidden="true" />}>
+      <SignUpForm />
+    </Suspense>
+  );
 }

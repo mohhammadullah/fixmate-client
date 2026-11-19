@@ -7,6 +7,7 @@ import {
   decideRefund,
   type AdminRefund,
 } from "@/lib/admin-api";
+import { formatMinorUnits } from "@/lib/currency";
 
 const STATUS_TABS = [
   { value: "pending", label: "Pending" },
@@ -73,7 +74,7 @@ export default function AdminRefunds() {
       const updated = await decideRefund(refund.paymentId, refund.id, decision, notes[refund.id]);
       toast.success(
         decision === "approve"
-          ? `Refund of ${(updated.amount / 100).toFixed(2)} ${updated.currency.toUpperCase()} processed via Stripe.`
+          ? `Refund of ${formatMinorUnits(updated.amountMinor, updated.currency)} processed via Stripe.`
           : "Refund request rejected."
       );
       await load(tab);
@@ -83,13 +84,6 @@ export default function AdminRefunds() {
       setBusyId(null);
     }
   }
-
-  const formatMoney = (amountMinor: number, currency: string) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currency.toUpperCase(),
-      minimumFractionDigits: 2,
-    }).format(amountMinor / 100);
 
   return (
     <div>
@@ -156,7 +150,7 @@ export default function AdminRefunds() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-lg font-extrabold tabular-nums text-heading">
-                    {formatMoney(refund.amountMinor, refund.currency)}
+                    {formatMinorUnits(refund.amountMinor, refund.currency)}
                   </p>
                   <p className="mt-0.5 text-[11px] font-medium text-muted">
                     requested {new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(refund.requestedAt))}

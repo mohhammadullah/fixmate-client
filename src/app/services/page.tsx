@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import ServicesListing from "@/components/services/ServicesListing";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "Repair Services",
   description:
-    "Explore repair solutions for smartphones, laptops, refrigerators, AC units, TVs and home appliances with FixMate.",
-};
+    "Browse verified repair and maintenance services for smartphones, laptops, AC units, refrigerators, TVs, washing machines, and electrical issues on FixMate.",
+  path: "/services",
+});
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 

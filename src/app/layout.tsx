@@ -4,6 +4,13 @@ import { Toaster } from "sonner";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import {
+  DEFAULT_OG_IMAGE_PATH,
+  DEFAULT_SITE_DESCRIPTION,
+  SITE_NAME,
+  absoluteUrl,
+  getMetadataBase,
+} from "@/lib/seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,52 +22,88 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-let siteUrl: URL | undefined;
-if (rawSiteUrl) {
-  try {
-    const parsed = new URL(rawSiteUrl);
-    if (parsed.protocol === "https:" || parsed.protocol === "http:") {
-      siteUrl = parsed;
-    }
-  } catch {
-    siteUrl = undefined;
-  }
-}
+const ogImageUrl = absoluteUrl(DEFAULT_OG_IMAGE_PATH);
 
 export const metadata: Metadata = {
-  ...(siteUrl ? { metadataBase: siteUrl } : {}),
+  metadataBase: getMetadataBase(),
   title: {
-    default: "FixMate — Expert Repairs. Reliable Solutions. Every Time.",
+    default: "FixMate | Book Trusted Repair and Maintenance Services",
     template: "%s | FixMate",
   },
-  description:
-    "Find verified repair technicians for smartphones, laptops and home appliances. Approved services, transparent hourly rates and genuine customer reviews — book trusted repairs with FixMate.",
-  applicationName: "FixMate",
+  description: DEFAULT_SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  manifest: "/manifest.webmanifest",
   openGraph: {
     type: "website",
-    siteName: "FixMate",
-    title: "FixMate — Expert Repairs. Reliable Solutions. Every Time.",
-    description:
-      "Find verified repair technicians for smartphones, laptops and home appliances. Approved services, transparent hourly rates and genuine customer reviews — book trusted repairs with FixMate.",
-    ...(siteUrl ? { url: siteUrl } : {}),
+    siteName: SITE_NAME,
+    title: "FixMate | Book Trusted Repair and Maintenance Services",
+    description: DEFAULT_SITE_DESCRIPTION,
+    url: absoluteUrl("/"),
+    images: [
+      {
+        url: ogImageUrl,
+        width: 1200,
+        height: 630,
+        alt: "FixMate repair and maintenance services",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "FixMate — Expert Repairs. Reliable Solutions. Every Time.",
-    description:
-      "Find verified repair technicians for smartphones, laptops and home appliances. Book trusted repairs with FixMate.",
+    title: "FixMate | Book Trusted Repair and Maintenance Services",
+    description: DEFAULT_SITE_DESCRIPTION,
+    images: [ogImageUrl],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
   verification: {
     google: "zTJTdV-KqTWoI_QPgKXx8oi7ZqlPdc03PgqGeubJd-0",
   },
+  category: "technology",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
+  const siteUrl = absoluteUrl("/");
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: SITE_NAME,
+    url: siteUrl,
+    logo: absoluteUrl("/favicon.ico"),
+    description: DEFAULT_SITE_DESCRIPTION,
+    email: "gmhgazi92@gmail.com",
+    telephone: "+8801952182385",
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Khulna",
+      addressCountry: "BD",
+    },
+    sameAs: ["https://www.linkedin.com/in/gazi-mohammadullah"],
+  };
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE_NAME,
+    url: siteUrl,
+    description: DEFAULT_SITE_DESCRIPTION,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${absoluteUrl("/services")}?search={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
+  };
+  const serializeJsonLd = (value: unknown) =>
+    JSON.stringify(value).replace(/</g, "\\u003c");
+
   return (
     <html
       lang="en"
@@ -74,6 +117,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=window.localStorage.getItem("fixmate-theme");var d=t!=="light";var r=document.documentElement;r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light";}catch(e){document.documentElement.classList.add("dark");document.documentElement.style.colorScheme="dark";}})();`,
           }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteJsonLd) }}
         />
         <Navbar />
         {children}

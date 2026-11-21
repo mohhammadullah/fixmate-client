@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import LegalPage, { LegalList, LegalNote, LegalSection } from "@/components/legal/LegalPage";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "Privacy Policy",
   description:
-    "What FixMate collects, why, how it is used, who can see it, and what your choices are — registration, profiles, bookings, Stripe payments, chat, reviews, images and authentication.",
-};
+    "Read FixMate's Privacy Policy to understand what information is collected, how it is used, and how bookings, payments, chat, and reviews are handled.",
+  path: "/privacy",
+});
 
 const LAST_UPDATED = "19 November 2026";
 

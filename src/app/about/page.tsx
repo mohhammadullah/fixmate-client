@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "About Us",
+export const metadata: Metadata = createPageMetadata({
+  title: "About FixMate",
   description:
-    "FixMate connects customers with technicians for device and home appliance repairs — making repair services easier, more accessible and reliable.",
-};
+    "Learn how FixMate connects customers with verified technicians for device and home appliance repairs, making booking and repair management simple and reliable.",
+  path: "/about",
+});
 
 const IMPROVEMENTS = [
   {

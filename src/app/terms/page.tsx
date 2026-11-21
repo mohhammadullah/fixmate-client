@@ -1,12 +1,14 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import LegalPage, { LegalList, LegalNote, LegalSection } from "@/components/legal/LegalPage";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Terms & Conditions",
+export const metadata: Metadata = createPageMetadata({
+  title: "Terms and Conditions",
   description:
-    "The terms that govern the FixMate platform — how accounts, technician listings, bookings, Stripe checkout payments, cancellations, refunds, reviews and disputes work.",
-};
+    "Review FixMate's Terms and Conditions for accounts, technician listings, bookings, payments, cancellations, refunds, reviews, and platform use.",
+  path: "/terms",
+});
 
 const LAST_UPDATED = "19 November 2026";
 

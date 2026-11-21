@@ -12,6 +12,7 @@ import {
   type AnyServiceCategory,
 } from "@/lib/service-categories";
 import { API_BASE } from "@/lib/api";
+import type { PublicServiceDetail } from "@/lib/public-service-detail";
 
 /** Types mirror the public service-details DTO.
  *  GET /api/services/:id returns the safe public projection of an approved
@@ -24,7 +25,7 @@ const CATEGORIES = ALL_SERVICE_CATEGORIES;
 
 type ServiceCategory = AnyServiceCategory;
 
-interface PublicServiceDetails {
+export interface PublicServiceDetails {
   _id: string;
   title: string;
   category: ServiceCategory;
@@ -701,15 +702,27 @@ function BookingPanel({ service }: { service: PublicServiceDetails }) {
 }
 
 
-export default function ServiceDetails({ serviceId }: { serviceId: string }) {
+export default function ServiceDetails({
+  serviceId,
+  initialService = null,
+}: {
+  serviceId: string;
+  initialService?: PublicServiceDetail | null;
+}) {
   const [reloadToken, setReloadToken] = useState(0);
   const [state, setState] = useState<
     | { phase: "loading" }
     | { phase: "error"; error: DetailsError }
     | { phase: "success"; service: PublicServiceDetails }
-  >({ phase: "loading" });
+  >(
+    initialService
+      ? { phase: "success", service: initialService as unknown as PublicServiceDetails }
+      : { phase: "loading" },
+  );
 
   useEffect(() => {
+    if (initialService && reloadToken === 0) return;
+
     const controller = new AbortController();
     let cancelled = false;
 
@@ -729,7 +742,7 @@ export default function ServiceDetails({ serviceId }: { serviceId: string }) {
           phase: "error",
           error: new DetailsError(
             "server",
-            "Something went wrong while loading this service. Please try again."
+            "Something went wrong while loading this service. Please try again.",
           ),
         });
       });
@@ -738,7 +751,7 @@ export default function ServiceDetails({ serviceId }: { serviceId: string }) {
       cancelled = true;
       controller.abort();
     };
-  }, [serviceId, reloadToken]);
+  }, [serviceId, reloadToken, initialService]);
 
   function retry() {
     // Event handler — setting the loading phase synchronously is safe.
@@ -792,9 +805,9 @@ function ServiceDetailsContent({ service }: { service: PublicServiceDetails }) {
             </span>
           </div>
           <div className="p-5 sm:p-7">
-            <h2 id="service-details-heading" className="text-xl font-extrabold tracking-tight text-heading sm:text-2xl">
+            <h1 id="service-details-heading" className="text-xl font-extrabold tracking-tight text-heading sm:text-2xl">
               {service.title}
-            </h2>
+            </h1>
             <p className="mt-2 flex items-center gap-1.5 text-sm text-muted">
               <svg
                 viewBox="0 0 24 24"

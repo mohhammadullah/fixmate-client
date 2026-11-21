@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
+import { DEFAULT_SITE_DESCRIPTION, SITE_NAME, absoluteUrl } from "@/lib/seo";
 import HeroSection from "@/components/home/HeroSection";
 import FeaturedServices, {
   FeaturedServicesSkeleton,
@@ -14,6 +16,28 @@ import Testimonials, {
   TestimonialsSkeleton,
 } from "@/components/home/Testimonials";
 import FinalCTA from "@/components/home/FinalCTA";
+
+export const metadata: Metadata = {
+  title: {
+    absolute: `${SITE_NAME} | Book Trusted Repair and Maintenance Services`,
+  },
+  description: DEFAULT_SITE_DESCRIPTION,
+  alternates: {
+    canonical: absoluteUrl("/"),
+  },
+  openGraph: {
+    title: `${SITE_NAME} | Book Trusted Repair and Maintenance Services`,
+    description: DEFAULT_SITE_DESCRIPTION,
+    url: absoluteUrl("/"),
+    type: "website",
+    siteName: SITE_NAME,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} | Book Trusted Repair and Maintenance Services`,
+    description: DEFAULT_SITE_DESCRIPTION,
+  },
+};
 
 function HeroFallback() {
   return (

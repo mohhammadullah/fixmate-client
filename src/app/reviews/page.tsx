@@ -1,12 +1,14 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import ReviewsExplorer from "@/components/reviews/ReviewsExplorer";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "Customer Reviews",
   description:
-    "Real reviews from FixMate customers on completed repairs. Every review here is tied to a genuine, completed booking.",
-};
+    "Read genuine FixMate customer reviews from completed repair bookings to understand real service experiences before you book.",
+  path: "/reviews",
+});
 
 export default function ReviewsPage() {
   return (
